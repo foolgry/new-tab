@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "自定义新标签页 - 书签管理器",
+  "version": "1.0.0",
+  "description": "一个简洁优雅的Chrome新标签页，让您轻松管理和快速访问常用书签。支持自定义排序和访问频次排序。",
+  "permissions": ["storage", "activeTab"],
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "icons/tab.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "icons/tab.png",
+    "32": "icons/tab.png",
+    "48": "icons/tab.png",
+    "128": "icons/tab.png"
+  }
+}

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>添加到书签</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <header class="popup-header">
+      <h2>添加到书签</h2>
+    </header>
+
+    <div id="current-page" class="current-page">
+      <div class="page-info">
+        <div class="page-favicon">
+          <img id="page-favicon" src="" alt="页面图标">
+        </div>
+        <div class="page-details">
+          <div id="page-title" class="page-title">加载中...</div>
+          <div id="page-url" class="page-url">加载中...</div>
+        </div>
+      </div>
+    </div>
+
+    <form id="add-form" class="add-form">
+      <div class="form-group">
+        <label for="bookmark-title">标题</label>
+        <input
+          id="bookmark-title"
+          type="text"
+          required
+          placeholder="输入书签标题"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="bookmark-url">网址</label>
+        <input
+          id="bookmark-url"
+          type="url"
+          required
+          placeholder="https://example.com"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="bookmark-group">分组</label>
+        <select id="bookmark-group" required>
+          <!-- 分组选项动态生成 -->
+        </select>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" id="submit-btn" class="add-btn">
+          添加到书签
+        </button>
+      </div>
+    </form>
+
+    <div id="message" class="message" style="display: none;"></div>
+
+    <div class="popup-footer">
+      <button id="view-bookmarks" class="view-bookmarks-btn">
+        查看所有书签
+      </button>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
