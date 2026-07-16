@@ -4,43 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>我的书签</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap">
   <link rel="stylesheet" href="newtab.css">
 </head>
 <body>
   <div class="newtab-container">
-    <header class="header">
-      <h1>我的书签</h1>
-      <div class="actions">
-        <button id="add-bookmark-btn" class="add-btn">
-          <span class="icon">+</span>
-          添加书签
-        </button>
+    <header class="header" id="app-header">
+      <div class="header-dynamic" id="header-dynamic">
+        <!-- 顶栏内容由 JS 渲染 -->
       </div>
     </header>
 
-    <main class="main-content">
-      <!-- 左侧分组边栏 -->
-      <aside class="sidebar">
-        <div class="sidebar-header">
-          <h2>分组</h2>
-          <button id="add-group-btn" class="add-group-btn" title="添加分组">+</button>
-        </div>
-        <div id="groups-list" class="groups-list">
-          <!-- 分组列表动态生成 -->
-        </div>
-      </aside>
-
-      <!-- 右侧主内容区 -->
-      <div class="main-area">
-        <div class="sort-options">
-          <button id="sort-custom" class="sort-btn">自定义排序</button>
-          <button id="sort-frequency" class="sort-btn active">按访问频次</button>
-        </div>
-
-        <div id="bookmarks-grid" class="bookmarks-grid">
-          <!-- 书签卡片将通过JavaScript动态生成 -->
-        </div>
-      </div>
+    <main class="main-content" id="main-content">
+      <!-- 书签内容由 JS 渲染 -->
     </main>
 
     <!-- 添加书签弹窗 -->
@@ -101,6 +79,9 @@
         </form>
       </div>
     </div>
+
+    <!-- 导入文件（持久存在） -->
+    <input id="import-file" type="file" accept=".json,application/json" style="display:none">
   </div>
 
   <script src="newtab.js"></script>
