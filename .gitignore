@@ -1,0 +1,6 @@
+# 编辑器 / AI 工具会话目录
+.zcode/
+
+# 系统文件
+.DS_Store
+Thumbs.db
