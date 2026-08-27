@@ -253,7 +253,7 @@ class BookmarkManager {
     return `
       <div class="bookmark-row" data-id="${bookmark.id}" draggable="${this.sortBy === 'custom'}">
         <div class="row-favicon">
-          <img alt="${this.escapeHtml(bookmark.title)}">
+          <img alt="${this.escapeHtml(bookmark.title)}" loading="lazy" decoding="async">
         </div>
         <span class="row-title">${this.escapeHtml(bookmark.title)}</span>
         <button class="row-delete" title="删除">×</button>

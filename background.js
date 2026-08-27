@@ -65,37 +65,7 @@ async function initializeDefaultBookmarks() {
   }
 }
 
-// 监听标签页更新事件（用于访问统计）
-chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-  if (changeInfo.status === 'complete' && tab.url) {
-    try {
-      // 排除Chrome内部页面
-      const url = new URL(tab.url);
-      if (url.protocol.startsWith('chrome://') || url.protocol === 'chrome-extension://') {
-        return;
-      }
-
-      // 检查是否是书签网站
-      const result = await chrome.storage.local.get(['bookmarks']);
-      const bookmarks = result.bookmarks || [];
-
-      const bookmark = bookmarks.find(b =>
-        new URL(b.url).hostname === url.hostname
-      );
-
-      if (bookmark) {
-        // 更新访问统计
-        bookmark.visitCount++;
-        bookmark.lastVisit = Date.now();
-
-        await chrome.storage.local.set({ bookmarks });
-        console.log(`更新了 ${bookmark.title} 的访问统计`);
-      }
-    } catch (error) {
-      console.error('更新访问统计失败:', error);
-    }
-  }
-});
+// 访问统计：仅在用户从新标签页点击书签时计数（见 newtab.js 的 openBookmark）
 
 // 监听来自popup的消息
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
