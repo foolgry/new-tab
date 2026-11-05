@@ -621,3 +621,78 @@ body {
 .context-menu-item:hover {
   background: var(--hover-bg);
 }
+
+/* ==================== 云同步 ==================== */
+
+.sync-btn {
+  position: relative;
+}
+
+.sync-btn.sync-on {
+  color: var(--accent);
+}
+
+.sync-btn::after {
+  content: '';
+  position: absolute;
+  right: 7px;
+  bottom: 7px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.sync-btn.sync-on::after {
+  background: #4c9a62;
+}
+
+.sync-btn.sync-error::after {
+  background: #c83c32;
+}
+
+.modal-sync {
+  max-width: 520px;
+  max-height: 88vh;
+  overflow-y: auto;
+}
+
+.form-hint {
+  margin-top: 0.45rem;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--text-faint);
+}
+
+.sync-note {
+  margin: 0 0 1rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: var(--radius-input);
+  background: var(--accent-soft);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.6;
+}
+
+.sync-status {
+  min-height: 1.2rem;
+  margin: 0 0 1rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.sync-status.ok {
+  color: #3d7a4e;
+}
+
+.sync-status.error {
+  color: #b23a30;
+}
+
+.form-actions-split {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}

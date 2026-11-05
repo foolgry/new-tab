@@ -1,8 +1,62 @@
+// 常见 WebDAV 服务商预设：固定地址的只需填账号和密钥
+const WEBDAV_PRESETS = [
+  {
+    id: 'jianguoyun',
+    name: '坚果云',
+    url: 'https://dav.jianguoyun.com/dav/',
+    hint: '账号填注册邮箱；密钥填「账户信息 → 安全选项 → 第三方应用管理」里生成的应用密码。'
+  },
+  {
+    id: 'pcloud',
+    name: 'pCloud',
+    url: 'https://webdav.pcloud.com/',
+    hint: '账号填 pCloud 邮箱；密钥填密码（建议使用应用专用密码）。'
+  },
+  {
+    id: 'yandex',
+    name: 'Yandex Disk',
+    url: 'https://webdav.yandex.ru/',
+    hint: '账号填 Yandex 邮箱；密钥填「应用密码」，不是登录密码。'
+  },
+  {
+    id: 'infini-cloud',
+    name: 'InfiniCLOUD',
+    url: 'https://your-server.teracloud.jp/dav/',
+    hint: '把 your-server 替换为注册时分配的服务器名。'
+  },
+  {
+    id: 'nextcloud',
+    name: 'Nextcloud',
+    url: 'https://your-host/remote.php/dav/files/your-username/',
+    hint: '替换 your-host 和 your-username，地址需以 / 结尾。'
+  },
+  {
+    id: 'synology',
+    name: '群晖 NAS',
+    url: 'https://your-host:5006/',
+    hint: '先在 DSM 中开启 WebDAV Server；HTTPS 默认端口 5006。'
+  },
+  {
+    id: 'alist',
+    name: 'AList',
+    url: 'http://your-host:5244/dav/',
+    hint: 'AList 默认端口 5244；本地 HTTP 地址也可使用。'
+  },
+  {
+    id: 'custom',
+    name: '自定义',
+    url: '',
+    hint: '填写已存在的 WebDAV 目录地址，需以 / 结尾；同步文件会写入该目录下。'
+  }
+];
+
 // 书签管理类
 class BookmarkManager {
   constructor() {
     this.bookmarks = [];
     this.groups = [];
+    this.tombstones = { bookmarks: {}, groups: {} };
+    this.deviceId = '';
     this.currentGroupId = 'default';
     this.sortBy = 'frequency';
     this.draggedElement = null;
@@ -10,56 +64,71 @@ class BookmarkManager {
 
     this.searchKeyword = '';
     this.collapsedGroups = new Set();
+    this.reloadTimer = null;
+    this.syncStatus = null;
 
     this.init();
   }
 
   async init() {
-    await Promise.all([
-      this.loadBookmarks(),
-      this.loadGroups()
-    ]);
+    this.deviceId = await this.loadDeviceId();
+    await this.loadData();
     this.bindGlobalEvents();
+    this.bindStorageSync();
     this.render();
+    this.loadSyncStatus();
+    this.autoSync();
   }
 
   // ==================== 数据加载 / 保存 ====================
 
-  async loadBookmarks() {
+  async loadDeviceId() {
     try {
-      const result = await chrome.storage.local.get(['bookmarks']);
-      this.bookmarks = result.bookmarks || [];
+      const result = await chrome.storage.local.get('deviceId');
+      if (result.deviceId) return result.deviceId;
+      const deviceId = SyncCore.randomId();
+      await chrome.storage.local.set({ deviceId });
+      return deviceId;
+    } catch (error) {
+      console.error('加载设备标识失败:', error);
+      return SyncCore.randomId();
+    }
+  }
+
+  async loadData() {
+    try {
+      const result = await chrome.storage.local.get(['bookmarks', 'groups', 'currentGroupId', 'tombstones']);
+      const normalized = SyncCore.normalizeLocalState(result, this.deviceId);
+
+      this.bookmarks = normalized.bookmarks;
+      this.groups = normalized.groups;
+      this.tombstones = normalized.tombstones;
+      this.currentGroupId = result.currentGroupId || 'default';
+      if (!this.groups.some(group => group.id === this.currentGroupId)) {
+        this.currentGroupId = 'default';
+      }
 
       const migratedCount = this.migrateBookmarkFavicons();
-      if (migratedCount > 0) {
-        await this.saveBookmarks();
+      if (normalized.changed || migratedCount > 0) {
+        await this.saveAll();
       }
     } catch (error) {
       console.error('加载书签失败:', error);
       this.bookmarks = [];
+      this.groups = [{ id: 'default', name: '默认分组', order: 0, updatedAt: 0 }];
+      this.tombstones = { bookmarks: {}, groups: {} };
     }
   }
 
-  async loadGroups() {
+  async saveAll() {
     try {
-      const result = await chrome.storage.local.get(['groups', 'currentGroupId']);
-
-      if (!result.groups || result.groups.length === 0) {
-        this.groups = [{
-          id: 'default',
-          name: '默认分组',
-          order: 0
-        }];
-        await this.saveGroups();
-      } else {
-        this.groups = result.groups;
-      }
-
-      this.currentGroupId = result.currentGroupId || 'default';
+      await chrome.storage.local.set({
+        bookmarks: this.bookmarks,
+        groups: this.groups,
+        tombstones: this.tombstones
+      });
     } catch (error) {
-      console.error('加载分组失败:', error);
-      this.groups = [{ id: 'default', name: '默认分组', order: 0 }];
-      this.currentGroupId = 'default';
+      console.error('保存数据失败:', error);
     }
   }
 
@@ -97,6 +166,18 @@ class BookmarkManager {
     document.getElementById('add-group-modal').addEventListener('click', (e) => {
       if (e.target.id === 'add-group-modal') this.hideAddGroupModal();
     });
+    document.getElementById('sync-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'sync-modal') this.hideSyncModal();
+    });
+
+    // 云同步表单
+    document.getElementById('sync-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      this.saveSyncConfig();
+    });
+    document.getElementById('sync-test').addEventListener('click', () => this.testSyncConnection());
+    document.getElementById('sync-disable').addEventListener('click', () => this.disableSync());
+    document.getElementById('sync-provider').addEventListener('change', (e) => this.applySyncPreset(e.target.value));
 
     // 弹窗：取消按钮
     document.getElementById('cancel-add').addEventListener('click', () => this.hideAddModal());
@@ -152,6 +233,7 @@ class BookmarkManager {
         <input id="search-input" type="text" placeholder="搜索书签..." value="${this.escapeHtml(this.searchKeyword)}">
       </div>
       <div class="icon-btns">
+        <button id="sync-btn" class="icon-btn sync-btn" title="云同步">☁</button>
         <button id="add-bookmark" class="icon-btn" title="添加书签">+</button>
         <button id="add-group" class="icon-btn" title="添加分组">▤</button>
         <button id="import-btn" class="icon-btn" title="导入">↓</button>
@@ -172,6 +254,7 @@ class BookmarkManager {
       });
     }
 
+    document.getElementById('sync-btn').addEventListener('click', () => this.showSyncModal());
     document.getElementById('add-bookmark').addEventListener('click', () => this.showAddModal());
     document.getElementById('add-group').addEventListener('click', () => this.showAddGroupModal());
     document.getElementById('export-btn').addEventListener('click', () => this.exportData());
@@ -181,6 +264,7 @@ class BookmarkManager {
     });
     document.getElementById('sort-custom').addEventListener('click', () => this.setSortMode('custom'));
     document.getElementById('sort-frequency').addEventListener('click', () => this.setSortMode('frequency'));
+    this.applySyncButtonState();
   }
 
   renderBody() {
@@ -356,6 +440,8 @@ class BookmarkManager {
       const targetBookmark = this.bookmarks.find(b => b.id === row.dataset.id);
       if (!targetBookmark) return;
 
+      const before = new Map(this.bookmarks.map(b => [b.id, { order: b.order, groupId: b.groupId }]));
+
       // 跨列改分组
       if (this.draggedBookmark.groupId !== targetBookmark.groupId) {
         this.draggedBookmark.groupId = targetBookmark.groupId;
@@ -369,7 +455,14 @@ class BookmarkManager {
         if (!isUpperHalf) targetIndex += 1;
         this.bookmarks.splice(targetIndex, 0, this.draggedBookmark);
       }
-      this.bookmarks.forEach((b, i) => { b.order = i; });
+      const now = Date.now();
+      this.bookmarks.forEach((b, i) => {
+        b.order = i;
+        const previous = before.get(b.id);
+        if (!previous || previous.order !== i || previous.groupId !== b.groupId) {
+          b.updatedAt = now;
+        }
+      });
       await this.saveBookmarks();
       this.clearDropMarkers();
       this.renderColumns();
@@ -396,7 +489,8 @@ class BookmarkManager {
     const group = {
       id: Date.now().toString(),
       name: name.trim(),
-      order: this.groups.length
+      order: this.groups.length,
+      updatedAt: Date.now()
     };
     this.groups.push(group);
     await this.saveGroups();
@@ -408,15 +502,23 @@ class BookmarkManager {
     const confirmed = confirm('删除分组后，该分组下的书签将移至默认分组。确定删除吗？');
     if (!confirmed) return;
 
+    const group = this.groups.find(g => g.id === groupId);
+    if (group) {
+      this.tombstones.groups[SyncCore.normalizeGroupName(group.name)] = Date.now();
+    }
+
+    const now = Date.now();
     this.bookmarks.forEach(b => {
-      if (b.groupId === groupId) b.groupId = 'default';
+      if (b.groupId === groupId) {
+        b.groupId = 'default';
+        b.updatedAt = now;
+      }
     });
     const index = this.groups.findIndex(g => g.id === groupId);
     if (index !== -1) this.groups.splice(index, 1);
     this.groups.forEach((g, i) => { g.order = i; });
 
-    await this.saveBookmarks();
-    await this.saveGroups();
+    await this.saveAll();
 
     if (this.currentGroupId === groupId) {
       this.currentGroupId = 'default';
@@ -440,7 +542,9 @@ class BookmarkManager {
       visitCount: 0,
       lastVisit: 0,
       order: this.bookmarks.length,
-      groupId
+      groupId,
+      updatedAt: Date.now(),
+      visits: {}
     };
     this.bookmarks.push(bookmark);
     await this.saveBookmarks();
@@ -452,14 +556,17 @@ class BookmarkManager {
     if (!confirm('确定要删除这个书签吗？')) return;
     const index = this.bookmarks.findIndex(b => b.id === id);
     if (index !== -1) {
-      this.bookmarks.splice(index, 1);
-      await this.saveBookmarks();
+      const [removed] = this.bookmarks.splice(index, 1);
+      this.tombstones.bookmarks[SyncCore.normalizeUrl(removed.url)] = Date.now();
+      await this.saveAll();
       this.render();
     }
   }
 
   async openBookmark(bookmark) {
-    bookmark.visitCount++;
+    bookmark.visits = bookmark.visits || {};
+    bookmark.visits[this.deviceId] = (bookmark.visits[this.deviceId] || 0) + 1;
+    bookmark.visitCount = SyncCore.sumVisits(bookmark.visits);
     bookmark.lastVisit = Date.now();
     await this.saveBookmarks();
     window.open(bookmark.url, '_self');
@@ -525,17 +632,14 @@ class BookmarkManager {
 
   exportData() {
     const data = {
-      version: 1,
+      version: 2,
+      schema: 2,
       app: 'custom-newtab',
       exportedAt: new Date().toISOString(),
+      deviceId: this.deviceId,
       groups: this.groups,
-      bookmarks: this.bookmarks.map(b => ({
-        title: b.title,
-        url: b.url,
-        groupId: b.groupId,
-        visitCount: b.visitCount,
-        lastVisit: b.lastVisit
-      }))
+      bookmarks: this.bookmarks,
+      tombstones: this.tombstones
     };
     const json = JSON.stringify(data, null, 2);
     const blob = new Blob([json], { type: 'application/json' });
@@ -581,7 +685,8 @@ class BookmarkManager {
         const newGroup = {
           id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           name,
-          order: this.groups.length
+          order: this.groups.length,
+          updatedAt: Number(g.updatedAt) || Date.now()
         };
         this.groups.push(newGroup);
         groupMap[g.id] = newGroup.id;
@@ -589,34 +694,46 @@ class BookmarkManager {
       }
     });
 
-    const existingUrls = new Set(this.bookmarks.map(b => b.url));
+    const existingUrls = new Set(this.bookmarks.map(b => SyncCore.normalizeUrl(b.url)));
     let added = 0;
     let skipped = 0;
 
     importBookmarks.forEach(b => {
       if (!b || !b.url) return;
       const url = this.ensureHttps(b.url.trim());
-      if (existingUrls.has(url)) {
+      const normalizedUrl = SyncCore.normalizeUrl(url);
+      if (existingUrls.has(normalizedUrl)) {
         skipped += 1;
         return;
       }
+
+      let visits = SyncCore.normalizeVisits(b.visits);
+      if (Object.keys(visits).length === 0 && typeof b.visitCount === 'number' && b.visitCount > 0) {
+        visits = { [this.deviceId]: Math.floor(b.visitCount) };
+      }
+
       const bookmark = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${added}`,
         title: (b.title || url).trim(),
         url,
         favicon: this.getFaviconUrl(url),
-        visitCount: typeof b.visitCount === 'number' ? b.visitCount : 0,
+        visitCount: SyncCore.sumVisits(visits),
         lastVisit: typeof b.lastVisit === 'number' ? b.lastVisit : 0,
         order: this.bookmarks.length,
-        groupId: (b.groupId && groupMap[b.groupId]) ? groupMap[b.groupId] : 'default'
+        groupId: (b.groupId && groupMap[b.groupId]) ? groupMap[b.groupId] : 'default',
+        updatedAt: Number(b.updatedAt) || Date.now(),
+        visits
       };
       this.bookmarks.push(bookmark);
-      existingUrls.add(url);
+      existingUrls.add(normalizedUrl);
       added += 1;
     });
 
-    await this.saveGroups();
-    await this.saveBookmarks();
+    if (data.tombstones) {
+      this.tombstones = SyncCore.mergeTombstones(this.tombstones, data.tombstones);
+    }
+
+    await this.saveAll();
     this.render();
 
     if (added === 0 && skipped === 0) {
@@ -624,6 +741,253 @@ class BookmarkManager {
     } else {
       alert(`导入完成：新增 ${added} 个书签，跳过 ${skipped} 个重复，新建 ${newGroups} 个分组`);
     }
+  }
+
+  // ==================== 云同步 ====================
+
+  bindStorageSync() {
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName !== 'local') return;
+      if (!('bookmarks' in changes) && !('groups' in changes) && !('tombstones' in changes)) return;
+      clearTimeout(this.reloadTimer);
+      this.reloadTimer = setTimeout(() => this.reloadFromStorage(), 250);
+    });
+  }
+
+  async reloadFromStorage() {
+    try {
+      const result = await chrome.storage.local.get(['bookmarks', 'groups', 'tombstones']);
+      const normalized = SyncCore.normalizeLocalState(result, this.deviceId);
+      const currentSignature = SyncCore.signature({
+        bookmarks: this.bookmarks,
+        groups: this.groups,
+        tombstones: this.tombstones
+      });
+      if (currentSignature === SyncCore.signature(normalized)) return;
+
+      this.bookmarks = normalized.bookmarks;
+      this.groups = normalized.groups;
+      this.tombstones = normalized.tombstones;
+      if (!this.groups.some(group => group.id === this.currentGroupId)) {
+        this.currentGroupId = 'default';
+      }
+      this.render();
+    } catch (error) {
+      console.error('刷新同步数据失败:', error);
+    }
+  }
+
+  sendSyncMessage(payload) {
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage(payload, (response) => {
+        if (chrome.runtime.lastError) {
+          resolve({ ok: false, error: chrome.runtime.lastError.message });
+          return;
+        }
+        resolve(response || { ok: false, error: '后台没有响应' });
+      });
+    });
+  }
+
+  async loadSyncStatus() {
+    const status = await this.sendSyncMessage({ action: 'sync:getStatus' });
+    if (status && status.ok !== false) this.updateSyncButton(status);
+  }
+
+  async autoSync() {
+    const result = await chrome.storage.local.get('syncConfig');
+    if (!result.syncConfig || !result.syncConfig.enabled) return;
+    const status = await this.sendSyncMessage({ action: 'sync:now', reason: 'page-open', force: false });
+    if (status) this.updateSyncButton(status);
+  }
+
+  updateSyncButton(status) {
+    if (!status) return;
+    this.syncStatus = status;
+    this.applySyncButtonState();
+  }
+
+  applySyncButtonState() {
+    const button = document.getElementById('sync-btn');
+    if (!button) return;
+    const status = this.syncStatus;
+    if (!status) {
+      button.title = '云同步';
+      return;
+    }
+    button.classList.toggle('sync-on', !!status.enabled && !!status.lastSyncOk);
+    button.classList.toggle('sync-error', !!status.enabled && !status.lastSyncOk);
+    if (!status.enabled) {
+      button.title = '云同步（未开启）';
+      return;
+    }
+    button.title = status.lastSyncOk
+      ? `云同步已开启 · ${this.formatSyncTime(status.lastSyncAt)}`
+      : `云同步异常：${status.lastSyncError || '尚未同步'}`;
+  }
+
+  renderSyncProviders() {
+    const select = document.getElementById('sync-provider');
+    if (!select || select.options.length > 0) return;
+    WEBDAV_PRESETS.forEach((preset) => {
+      const option = document.createElement('option');
+      option.value = preset.id;
+      option.textContent = preset.name;
+      select.appendChild(option);
+    });
+  }
+
+  applySyncPreset(providerId, overwriteUrl = true) {
+    const preset = WEBDAV_PRESETS.find(item => item.id === providerId);
+    if (!preset) return;
+    const hint = document.getElementById('sync-url-hint');
+    if (hint) hint.textContent = preset.hint || '';
+    if (!overwriteUrl) return;
+    const urlInput = document.getElementById('sync-url');
+    if (urlInput) urlInput.value = preset.url || '';
+  }
+
+  async showSyncModal() {
+    this.renderSyncProviders();
+    const status = await this.sendSyncMessage({ action: 'sync:getStatus' });
+    const config = status && status.ok !== false ? status : {};
+
+    document.getElementById('sync-provider').value = config.providerId || 'custom';
+    document.getElementById('sync-url').value = config.url || '';
+    document.getElementById('sync-username').value = config.username || '';
+    document.getElementById('sync-filename').value = config.filename || 'newtab-bookmarks.json';
+
+    const passwordInput = document.getElementById('sync-password');
+    passwordInput.value = '';
+    passwordInput.placeholder = config.hasPassword ? '已保存密码，留空则不修改' : '填写应用密码或密钥';
+
+    this.applySyncPreset(config.providerId || 'custom', false);
+
+    if (config.enabled) {
+      const message = config.lastSyncOk
+        ? `同步已开启，最近同步：${this.formatSyncTime(config.lastSyncAt)}`
+        : `同步异常：${config.lastSyncError || '尚未成功同步'}`;
+      this.setSyncStatus(message, config.lastSyncOk ? 'ok' : 'error');
+    } else {
+      this.setSyncStatus('');
+    }
+
+    document.getElementById('sync-modal').style.display = 'flex';
+  }
+
+  hideSyncModal() {
+    document.getElementById('sync-modal').style.display = 'none';
+  }
+
+  collectSyncForm() {
+    return {
+      providerId: document.getElementById('sync-provider').value,
+      url: document.getElementById('sync-url').value.trim(),
+      username: document.getElementById('sync-username').value.trim(),
+      password: document.getElementById('sync-password').value,
+      filename: document.getElementById('sync-filename').value.trim() || 'newtab-bookmarks.json'
+    };
+  }
+
+  async requestSyncOriginPermission(url) {
+    let origin;
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') throw new Error('协议不支持');
+      origin = `${parsed.protocol}//${parsed.host}/*`;
+    } catch {
+      return { ok: false, error: 'WebDAV 地址格式不正确，需要以 http:// 或 https:// 开头' };
+    }
+
+    try {
+      const granted = await chrome.permissions.request({ origins: [origin] });
+      if (!granted) return { ok: false, error: '未授权访问该域名，无法同步' };
+      return { ok: true, origin };
+    } catch (error) {
+      return { ok: false, error: `授权失败：${error.message}` };
+    }
+  }
+
+  async saveSyncConfig() {
+    const form = this.collectSyncForm();
+    if (!form.url) {
+      this.setSyncStatus('请填写 WebDAV 地址', 'error');
+      return;
+    }
+
+    this.setSyncStatus('正在请求访问该域名的权限...');
+    const permission = await this.requestSyncOriginPermission(form.url);
+    if (!permission.ok) {
+      this.setSyncStatus(permission.error, 'error');
+      return;
+    }
+
+    this.setSyncStatus('正在保存并同步...');
+    const response = await this.sendSyncMessage({ action: 'sync:saveConfig', config: form });
+    if (!response || !response.ok) {
+      this.setSyncStatus((response && response.error) || '保存失败', 'error');
+      return;
+    }
+
+    this.updateSyncButton(response);
+    if (response.sync && response.sync.ok === false) {
+      this.setSyncStatus(`配置已保存，但首次同步失败：${response.sync.error}`, 'error');
+      return;
+    }
+
+    this.setSyncStatus(`同步完成 · ${this.formatSyncTime(response.lastSyncAt)}`, 'ok');
+    this.renderSyncProviders();
+    await this.reloadFromStorage();
+  }
+
+  async testSyncConnection() {
+    const form = this.collectSyncForm();
+    if (!form.url) {
+      this.setSyncStatus('请先填写 WebDAV 地址', 'error');
+      return;
+    }
+    const permission = await this.requestSyncOriginPermission(form.url);
+    if (!permission.ok) {
+      this.setSyncStatus(permission.error, 'error');
+      return;
+    }
+    this.setSyncStatus('正在测试连接...');
+    const response = await this.sendSyncMessage({ action: 'sync:testConnection', config: form });
+    this.setSyncStatus(
+      (response && response.message) || (response && response.ok ? '连接成功' : '连接失败'),
+      response && response.ok ? 'ok' : 'error'
+    );
+  }
+
+  async disableSync() {
+    if (!confirm('确定关闭云同步吗？本地书签不会被删除。')) return;
+    const response = await this.sendSyncMessage({ action: 'sync:disable' });
+    if (response && response.ok) {
+      this.updateSyncButton(response);
+      this.setSyncStatus('云同步已关闭，本地数据保持不变', 'ok');
+    } else {
+      this.setSyncStatus((response && response.error) || '关闭失败', 'error');
+    }
+  }
+
+  setSyncStatus(text, type) {
+    const element = document.getElementById('sync-status');
+    if (!element) return;
+    element.textContent = text || '';
+    element.className = `sync-status${type ? ` ${type}` : ''}`;
+  }
+
+  formatSyncTime(timestamp) {
+    if (!timestamp) return '尚未同步';
+    const date = new Date(timestamp);
+    const pad = (value) => String(value).padStart(2, '0');
+    const time = `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    const today = new Date();
+    const isToday = date.getFullYear() === today.getFullYear()
+      && date.getMonth() === today.getMonth()
+      && date.getDate() === today.getDate();
+    if (isToday) return time;
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${time}`;
   }
 
   // ==================== 工具方法 ====================

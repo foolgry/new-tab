@@ -77,10 +77,50 @@
       </div>
     </div>
 
+    <!-- 云同步设置弹窗 -->
+    <div id="sync-modal" class="modal-overlay" style="display: none;">
+      <div class="modal modal-sync">
+        <h2>云同步（WebDAV）</h2>
+        <form id="sync-form">
+          <div class="form-group">
+            <label for="sync-provider">服务商</label>
+            <select id="sync-provider">
+              <!-- 服务商选项动态生成 -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="sync-url">WebDAV 地址</label>
+            <input id="sync-url" type="url" required placeholder="https://example.com/dav/">
+            <p class="form-hint" id="sync-url-hint"></p>
+          </div>
+          <div class="form-group">
+            <label for="sync-username">账号</label>
+            <input id="sync-username" type="text" autocomplete="username" required>
+          </div>
+          <div class="form-group">
+            <label for="sync-password">应用密码 / 密钥</label>
+            <input id="sync-password" type="password" autocomplete="current-password" placeholder="留空表示不修改已保存的密码">
+          </div>
+          <div class="form-group">
+            <label for="sync-filename">同步文件名</label>
+            <input id="sync-filename" type="text" placeholder="newtab-bookmarks.json">
+          </div>
+          <p class="sync-note">首次同步会把本地与远端书签合并（按网址去重），不会覆盖任何一端。账号和密码只保存在本机浏览器，建议使用服务商提供的「应用专用密码」。</p>
+          <div class="sync-status" id="sync-status"></div>
+          <div class="form-actions form-actions-split">
+            <button type="button" id="sync-disable">关闭同步</button>
+            <button type="button" id="sync-test">测试连接</button>
+            <button type="submit" id="sync-save">保存并同步</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- 导入文件（持久存在） -->
     <input id="import-file" type="file" accept=".json,application/json" style="display:none">
   </div>
 
+  <script src="sync-core.js"></script>
   <script src="newtab.js"></script>
 </body>
 </html>

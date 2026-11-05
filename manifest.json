@@ -1,9 +1,10 @@
 {
   "manifest_version": 3,
   "name": "自定义新标签页 - 书签管理器",
-  "version": "1.0.0",
-  "description": "一个简洁优雅的Chrome新标签页，让您轻松管理和快速访问常用书签。支持自定义排序和访问频次排序。",
-  "permissions": ["storage", "activeTab", "favicon"],
+  "version": "1.1.0",
+  "description": "一个简洁优雅的Chrome新标签页，支持书签管理、访问频次排序和 WebDAV 云同步。",
+  "permissions": ["storage", "activeTab", "favicon", "alarms"],
+  "optional_host_permissions": ["http://*/*", "https://*/*"],
   "chrome_url_overrides": {
     "newtab": "newtab.html"
   },

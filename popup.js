@@ -88,7 +88,9 @@ class PopupManager {
         visitCount: 0,
         lastVisit: 0,
         order: bookmarks.length,
-        groupId: groupId
+        groupId: groupId,
+        updatedAt: Date.now(),
+        visits: {}
       };
 
       bookmarks.push(bookmark);
