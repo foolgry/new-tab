@@ -98,10 +98,13 @@ new-tab-extension/
 ├── popup.js             # 扩展弹窗逻辑
 ├── background.js        # 后台服务脚本（默认数据 + WebDAV 同步引擎）
 ├── sync-core.js         # 同步核心纯函数（合并 / 删除标记 / 兼容旧格式）
-├── tests/
-│   └── sync-core.test.js # 同步核心单元测试
+├── tests/               # Node 单元 / 集成测试
+│   ├── sync-core.test.js    # 同步核心单元测试
+│   └── webdav-sync.test.js  # WebDAV 同步集成测试
 ├── icons/
 │   └── icon.svg         # 扩展图标
+├── LICENSE              # MIT 许可证
+├── CONTRIBUTING.md      # 贡献指南
 └── README.md            # 说明文档
 ```
 
@@ -129,6 +132,12 @@ new-tab-extension/
 ### 测试
 ```bash
 node tests/sync-core.test.js
+node tests/webdav-sync.test.js
+```
+
+### 打包
+```bash
+zip -r release/archive.zip . -x "release/*" -x ".claude/*" -x ".DS_Store"
 ```
 
 ### 权限说明
@@ -144,9 +153,9 @@ node tests/sync-core.test.js
 - 其他基于Chromium的浏览器
 
 ## 许可证
-MIT License
+
+本项目采用 [MIT License](LICENSE) 开源。
 
 ## 贡献
-欢迎提交Issue和Pull Request！
 
-zip -r release/archive.zip . -x "release/*" -x ".claude/*" -x ".DS_Store"
+欢迎提交 Issue 和 Pull Request。开始之前请阅读 [CONTRIBUTING.md](CONTRIBUTING.md)，了解本地开发、测试和提交约定。
