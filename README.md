@@ -163,6 +163,7 @@ zip -r release/archive.zip . -x "release/*" -x ".claude/*" -x ".DS_Store"
 ### Permissions
 - `storage`: store bookmark data
 - `activeTab`: read the current page's title and URL
+- `favicon`: display the site icon of each bookmark
 - `alarms`: trigger cloud sync on a schedule
 - `optional_host_permissions`: request WebDAV access per domain when saving the sync configuration
 - `chrome_url_overrides`: replace the new tab page

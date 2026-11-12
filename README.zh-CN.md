@@ -163,6 +163,7 @@ zip -r release/archive.zip . -x "release/*" -x ".claude/*" -x ".DS_Store"
 ### 权限说明
 - `storage`: 存储书签数据
 - `activeTab`: 获取当前页面信息
+- `favicon`: 显示书签对应网站的图标
 - `alarms`: 定时触发云同步
 - `optional_host_permissions`: 保存同步配置时按域名申请 WebDAV 访问权限
 - `chrome_url_overrides`: 替换新标签页
