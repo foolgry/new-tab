@@ -157,6 +157,48 @@ test('页面与脚本里引用的 i18n key 都存在于两种语言目录', () =
   assert.deepStrictEqual(missing, [], `以下 i18n key 未在两种语言目录中定义：\n${missing.join('\n')}`);
 });
 
+test('动态引用的 i18n key 也都存在于两种语言目录', () => {
+  const missing = [];
+
+  // newtab.js：WEBDAV_PRESETS 的 nameKey / hintKey 通过变量动态取用，静态扫描扫不到
+  const newtabSource = readText('newtab.js');
+  const presetRegex = /\b(?:nameKey|hintKey):\s*'([^']+)'/g;
+  let preset = presetRegex.exec(newtabSource);
+  while (preset) {
+    if (!en[preset[1]] || !zh[preset[1]]) missing.push(`newtab.js 预设 key: ${preset[1]}`);
+    preset = presetRegex.exec(newtabSource);
+  }
+
+  // background.js：目录里的 bg* 消息都必须在 background.js 中被字面量引用
+  // （覆盖 SYNC_ERROR_MESSAGE_KEYS 的值、davError 的 bgAction* 等动态取用点）
+  const bgSource = readText('background.js');
+  Object.keys(en).filter((key) => key.startsWith('bg')).forEach((key) => {
+    if (!bgSource.includes(`'${key}'`)) missing.push(`background.js 未引用: ${key}`);
+  });
+
+  // sync-core 抛出的每个错误码都要在 SYNC_ERROR_MESSAGE_KEYS 里有映射
+  const syncCoreSource = readText('sync-core.js');
+  const mapMatch = bgSource.match(/const SYNC_ERROR_MESSAGE_KEYS\s*=\s*\{([\s\S]*?)\};/);
+  assert.ok(mapMatch, 'background.js 应定义 SYNC_ERROR_MESSAGE_KEYS');
+  const mappedCodes = new Set();
+  const mapEntryRegex = /([A-Z0-9_]+)\s*:\s*'([^']+)'/g;
+  let mapEntry = mapEntryRegex.exec(mapMatch[1]);
+  while (mapEntry) {
+    mappedCodes.add(mapEntry[1]);
+    if (!en[mapEntry[2]] || !zh[mapEntry[2]]) missing.push(`SYNC_ERROR_MESSAGE_KEYS 消息 key: ${mapEntry[2]}`);
+    mapEntry = mapEntryRegex.exec(mapMatch[1]);
+  }
+
+  const errorCodeRegex = /createSyncError\(\s*'([^']+)'/g;
+  let errorCode = errorCodeRegex.exec(syncCoreSource);
+  while (errorCode) {
+    if (!mappedCodes.has(errorCode[1])) missing.push(`SYNC_ERROR_MESSAGE_KEYS 缺少错误码: ${errorCode[1]}`);
+    errorCode = errorCodeRegex.exec(syncCoreSource);
+  }
+
+  assert.deepStrictEqual(missing, [], `动态引用的 i18n key 有缺失：\n${missing.join('\n')}`);
+});
+
 test('HTML 去掉注释后不再残留中文硬编码', () => {
   HTML_FILES.forEach((file) => {
     const stripped = readText(file).replace(/<!--[\s\S]*?-->/g, '');
