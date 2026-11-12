@@ -22,7 +22,7 @@ _locales/zh_CN/     简体中文消息目录
 newtab.html/css/js  新标签页（书签展示、分组、拖拽、同步配置 UI）
 popup.html/css/js   工具栏弹窗（一键添加当前页）
 migrate.js          一次性数据迁移脚本（手动在扩展页控制台执行）
-tests/              Node 单元 / 集成测试
+tests/              Node 单元 / 集成测试，另含可选的真实浏览器回归脚本
 icons/tab.png       扩展图标
 release/            打包产物（不要提交新 zip，除非用户明确要求）
 ```
@@ -38,6 +38,9 @@ node tests/webdav-sync.test.js
 
 # 国际化一致性测试：消息目录 + data-i18n* 标记
 node tests/i18n.test.js
+
+# 可选：真实浏览器双语回归（本机 Chrome/Edge；找不到浏览器时自动跳过）
+node tests/i18n-browser-check.js
 
 # 打包（与 README 保持一致，排除 release/.claude/.DS_Store）
 zip -r release/archive.zip . -x "release/*" -x ".claude/*" -x ".DS_Store"
@@ -104,6 +107,7 @@ zip -r release/archive.zip . -x "release/*" -x ".claude/*" -x ".DS_Store"
 - 纯函数改动：在 `tests/sync-core.test.js` 增加用例。
 - 涉及网络、消息、存储行为的改动：在 `tests/webdav-sync.test.js` 增加用例（已有 chrome API mock 与本地 WebDAV 服务器）。
 - 改动文案、消息目录或 `data-i18n*` 标记：在 `tests/i18n.test.js` 增加用例。
+- 界面文案有较大改动（尤其是英文长文案）：可额外跑 `node tests/i18n-browser-check.js`。该脚本用本机 Chrome 无头加载扩展，分别以 en、zh_CN 消息目录断言 newtab / popup / 同步面板 / 后台错误文案的真实渲染，并输出截图供人工检查排版；需要 Node 22+（全局 `WebSocket`）和 Chrome/Edge/Chromium，缺失时自动跳过。它不属于必跑测试，单独运行即可。
 - 测试不依赖浏览器，直接 `node <file>` 运行；不要引入测试框架。
 
 ## 提交与发布
