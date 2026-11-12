@@ -19,6 +19,7 @@ Closes #
 
 - [ ] 已运行 `node tests/sync-core.test.js`
 - [ ] 已运行 `node tests/webdav-sync.test.js`
+- [ ] 已运行 `node tests/i18n.test.js`
 - [ ] 涉及同步语义变化时已更新 `SCHEMA_VERSION` 并兼容旧格式
 - [ ] 未新增 npm 依赖或外链资源
 - [ ] 未提交账号、密钥等敏感信息

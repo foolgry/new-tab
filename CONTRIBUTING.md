@@ -1,55 +1,69 @@
-# 贡献指南
+# Contributing
 
-感谢你关注并愿意为本项目做出贡献。本文说明本地开发、测试、提交和 PR 的约定，提交前请先阅读。
+English | [简体中文](CONTRIBUTING.zh-CN.md)
 
-## 项目约束
+Thanks for taking the time to contribute to this project. This guide covers local development, testing, committing and pull requests; please read it before submitting a change.
 
-- 纯 HTML / CSS / JavaScript 的 Chrome Manifest V3 扩展，无框架、无构建步骤、无 npm 依赖。
-- 支持 Chrome / Edge 88+ 及其他 Chromium 内核浏览器。
-- 用户可见文案、注释、提交信息均使用简体中文。
+## Project constraints
 
-## 本地开发
+- A Chrome Manifest V3 extension written in plain HTML / CSS / JavaScript — no framework, no build step, no npm dependencies.
+- Supports Chrome / Edge 88+ and other Chromium-based browsers.
+- The user interface is bilingual (English / Simplified Chinese) and follows the browser language; user-visible copy lives in `_locales/`.
+- Code comments, `console.*` logs and commit messages stay in Simplified Chinese.
 
-1. Fork 并克隆仓库到本地。
-2. 打开 Chrome，进入 `chrome://extensions/`，开启右上角「开发者模式」。
-3. 点击「加载已解压的扩展程序」，选择项目根目录。
-4. 修改代码后，在扩展页点击「重新加载」使改动生效。
+## Local development
 
-## 运行测试
+1. Fork and clone the repository.
+2. Open Chrome and go to `chrome://extensions/`.
+3. Turn on "Developer mode" in the top-right corner.
+4. Click "Load unpacked" and select the project root.
+5. After editing the code, click "Reload" on the extensions page to apply the changes.
 
-测试直接使用 Node.js 运行，无需安装依赖：
+## Running the tests
+
+The tests run directly with Node.js; no dependency installation is needed:
 
 ```bash
 node tests/sync-core.test.js
 node tests/webdav-sync.test.js
+node tests/i18n.test.js
 ```
 
-- `sync-core.test.js`：同步核心纯函数的单元测试。
-- `webdav-sync.test.js`：mock Chrome API + 本地 HTTP 服务器模拟 WebDAV 的集成测试。
+- `sync-core.test.js`: unit tests for the pure functions of the sync core.
+- `webdav-sync.test.js`: integration tests with a mocked Chrome API and a local HTTP server that simulates WebDAV.
+- `i18n.test.js`: consistency tests for the message catalogs and the `data-i18n*` markers.
 
-## 编码约定
+## Coding conventions
 
-- 2 空格缩进、单引号、分号，`async/await`，优先使用 `const`。
-- 使用原生 DOM API，不引入框架、构建工具或新的 npm 依赖。
-- 保持零外链资源：字体、图标均本地化。
-- 同步逻辑必须放在 `sync-core.js` 并保持纯函数（无网络、无 chrome API 依赖），否则无法测试。
-- 权限保持最小化：WebDAV 域名继续使用 `optional_host_permissions` 按需申请，不要改为安装时的全站权限。
-- 失败路径使用 `try/catch` 并保留可读的中文错误信息，不要静默吞掉异常。
-- 不要在代码中硬编码账号、密钥或 WebDAV 凭据。
+- 2-space indentation, single quotes, semicolons, `async/await`, prefer `const`.
+- Use the native DOM API; do not introduce frameworks, build tools or new npm dependencies.
+- Keep zero external resources: fonts and icons are local.
+- Sync logic must live in `sync-core.js` and stay pure (no network, no chrome API dependency), otherwise it cannot be tested.
+- Keep permissions minimal: WebDAV domains keep using `optional_host_permissions` on demand; do not switch to all-site permissions at install time.
+- User-visible copy must be defined in `_locales/<locale>/messages.json`; static markup uses `data-i18n*` attributes and dynamic markup uses `I18n.t('key')`. Both locale directories must define exactly the same key set.
+- `SyncCore.DEFAULT_GROUP_NAME` is the **cross-device identity** of the default group and must never be translated; only its on-screen label is localized.
+- Use `try/catch` on failure paths and keep readable error messages; never swallow exceptions silently.
+- Do not hardcode accounts, keys or WebDAV credentials in the code.
 
-## 测试要求
+## Documentation
 
-- 纯函数改动：在 `tests/sync-core.test.js` 增加用例。
-- 涉及网络、消息、存储行为的改动：在 `tests/webdav-sync.test.js` 增加用例。
-- 任何改变同步快照语义的修改，必须同步更新 `SCHEMA_VERSION` 并兼容旧格式。
+- README, privacy policy and contribution guide are maintained in two languages: the English file is the primary document and the `*.zh-CN.md` file is its Chinese counterpart. Change both in the same commit.
+- `AGENTS.md` is an internal Chinese-only document for AI coding agents and is not translated.
 
-## 提交信息
+## Test requirements
 
-遵循 [Conventional Commits](https://www.conventionalcommits.org/)，scope 可参考：
+- Pure function changes: add cases to `tests/sync-core.test.js`.
+- Changes to network, messaging or storage behaviour: add cases to `tests/webdav-sync.test.js`.
+- Changes to i18n copy, message catalogs or `data-i18n*` markers: run and extend `tests/i18n.test.js`.
+- Any modification that changes sync snapshot semantics must update `SCHEMA_VERSION` and stay compatible with the old format.
 
-- `feat(sync)`、`fix(newtab)`、`perf(newtab)`、`refactor(frontend)`、`docs`、`chore`
+## Commit messages
 
-示例：
+Follow [Conventional Commits](https://www.conventionalcommits.org/); common scopes:
+
+- `feat(sync)`, `fix(newtab)`, `perf(newtab)`, `refactor(frontend)`, `docs`, `chore`
+
+Examples:
 
 ```text
 feat(sync): 支持 WebDAV 分页拉取
@@ -57,22 +71,22 @@ fix(newtab): 修复拖拽排序后顺序丢失
 docs: 补充贡献指南
 ```
 
-## 提交 Pull Request
+## Submitting a pull request
 
-1. 从远程默认分支创建新分支，一个 PR 聚焦一件事。
-2. 在 PR 描述中说明动机、改动内容和验证方式。
-3. 确认两个测试文件均通过；涉及界面或交互的改动请附截图或录屏。
-4. 不要提交 WebDAV 账号、密码、应用专用密码等敏感信息。
-5. 发布相关改动需确认 `manifest.json` 的 `version` 已递增。
+1. Create a branch from the remote default branch; keep one PR focused on one thing.
+2. Describe the motivation, the changes and how you verified them in the PR description.
+3. Make sure all three test files pass; attach screenshots or recordings for UI changes.
+4. Do not commit WebDAV accounts, passwords, app-specific passwords or other secrets.
+5. Release-related changes must bump the `version` in `manifest.json`.
 
-## 报告问题
+## Reporting issues
 
-请使用 Issue 模板，尽量提供：
+Please use the issue templates and provide as much as possible:
 
-- 浏览器及版本、扩展版本（`manifest.json` 中的 `version`）、操作系统；
-- 复现步骤、期望行为与实际行为；
-- 控制台报错或截图（请先移除账号、密码、WebDAV 地址等敏感信息）。
+- Browser and version, extension version (the `version` in `manifest.json`), and operating system;
+- Steps to reproduce, expected behaviour and actual behaviour;
+- Console errors or screenshots (please remove accounts, passwords, WebDAV addresses and other sensitive information first).
 
-## 安全问题
+## Security issues
 
-如果你发现安全漏洞，请不要公开提交 Issue，请通过 GitHub 的私下渠道联系维护者，待修复后再公开讨论。
+If you find a security vulnerability, please do not open a public issue. Contact the maintainer through GitHub's private channels and disclose it publicly once it is fixed.

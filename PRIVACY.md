@@ -1,46 +1,48 @@
-# 隐私权政策
+# Privacy Policy
 
-最后更新：2026 年 11 月 9 日
+English | [简体中文](PRIVACY.zh-CN.md)
 
-本隐私权政策适用于 Chrome 扩展程序「自定义新标签页 - 书签管理器」（以下简称“本扩展”）。
+Last updated: November 9, 2026
 
-## 一、数据存储
+This privacy policy applies to the Chrome extension "Custom New Tab - Bookmark Manager" (hereinafter "the Extension").
 
-本扩展不向开发者或任何第三方分析服务收集、上传数据。书签、分组、访问次数和设置默认只保存在用户浏览器的 `chrome.storage.local` 中。
+## 1. Data Storage
 
-## 二、WebDAV 同步
+The Extension does not collect or upload data to the developer or to any third-party analytics service. Bookmarks, groups, visit counts and settings are stored by default only in the user's browser via `chrome.storage.local`.
 
-- 仅当用户主动开启并配置 WebDAV 同步后，本扩展才会将书签快照写入用户指定的 WebDAV 服务器。
-- 该服务器由用户自行选择和控制（例如坚果云、Nextcloud、群晖 NAS、AList 或自建 WebDAV 服务）。
-- WebDAV 账号和密码仅保存在本机 `chrome.storage.local`，仅用于向用户配置的 WebDAV 地址发起认证请求，不会发送给开发者或任何其他第三方。
-- 用户可以随时在扩展设置中关闭同步，并自行删除 WebDAV 服务器上的同步文件。
+## 2. WebDAV Sync
 
-## 三、权限用途
+- Only after the user explicitly enables and configures WebDAV sync does the Extension write bookmark snapshots to the WebDAV server the user specified.
+- That server is chosen and controlled by the user (for example Nutstore, Nextcloud, Synology NAS, AList, or a self-hosted WebDAV service).
+- The WebDAV account and password are stored only in the local `chrome.storage.local`, are used solely to authenticate requests to the WebDAV address the user configured, and are never sent to the developer or any other third party.
+- The user can turn sync off at any time in the extension settings and delete the sync file on the WebDAV server themselves.
 
-| 权限 | 用途 |
+## 3. Permission Purposes
+
+| Permission | Purpose |
 | --- | --- |
-| `storage` | 保存书签、分组、删除标记和同步配置 |
-| `activeTab` | 用户点击扩展图标时读取当前标签页的标题和网址，用于一键添加书签 |
-| `favicon` | 显示书签对应网站的图标 |
-| `alarms` | 定时触发 WebDAV 同步 |
-| `optional_host_permissions` | 仅在用户保存 WebDAV 配置时，按域名申请访问该服务器所需的权限 |
+| `storage` | Store bookmarks, groups, tombstones and sync configuration |
+| `activeTab` | Read the current tab's title and URL when the user clicks the extension icon, to add a bookmark with one click |
+| `favicon` | Display the favicon of the site a bookmark points to |
+| `alarms` | Trigger WebDAV sync on a schedule |
+| `optional_host_permissions` | Request access to a server only when the user saves a WebDAV configuration, and only for that domain |
 
-## 四、数据共享与出售
+## 4. Data Sharing and Sale
 
-本扩展不会出售、出租或向任何第三方共享用户数据。WebDAV 同步由用户主动配置，数据仅传输至用户指定的服务器。
+The Extension does not sell, rent or share user data with any third party. WebDAV sync is configured by the user, and data is only transmitted to the server the user specified.
 
-## 五、数据删除
+## 5. Data Deletion
 
-用户可以在扩展界面删除单个书签或分组；卸载扩展会清除 `chrome.storage.local` 中的全部本地数据。WebDAV 服务器上的同步文件需用户在服务商处自行删除。
+Users can delete individual bookmarks or groups in the extension UI; uninstalling the Extension clears all local data in `chrome.storage.local`. The sync file on the WebDAV server must be deleted by the user at the provider.
 
-## 六、儿童隐私
+## 6. Children's Privacy
 
-本扩展不面向 13 岁以下儿童，也不会主动收集儿童数据。
+The Extension is not directed at children under 13 and does not knowingly collect data from children.
 
-## 七、政策更新
+## 7. Policy Updates
 
-如本政策发生变更，我们会更新本页面并修改“最后更新”日期。
+If this policy changes, we will update this page and change the "Last updated" date.
 
-## 八、联系方式
+## 8. Contact
 
-如有疑问，请通过 GitHub Issues 联系：<https://github.com/foolgry/new-tab/issues>
+For questions, please reach us through GitHub Issues: <https://github.com/foolgry/new-tab/issues>
