@@ -3,11 +3,35 @@
 // 运行：node tests/webdav-sync.test.js
 const assert = require('assert');
 const http = require('http');
+const fs = require('fs');
+const path = require('path');
 
 globalThis.self = globalThis;
 require('../sync-core.js');
+require('../i18n.js');
 
 // ==================== chrome API mock ====================
+
+// i18n mock：直接读取 zh_CN 消息目录，界面语言固定为简体中文
+const zhMessages = JSON.parse(
+  fs.readFileSync(path.join(__dirname, '..', '_locales', 'zh_CN', 'messages.json'), 'utf8')
+);
+
+function getMessage(key, substitutions) {
+  const entry = zhMessages[key];
+  if (!entry) return '';
+  const subs = Array.isArray(substitutions) ? substitutions : [];
+  let text = entry.message;
+  Object.keys(entry.placeholders || {}).forEach((name) => {
+    const content = (entry.placeholders[name] || {}).content || '';
+    const indexMatch = /^\$([1-9])$/.exec(content);
+    const value = indexMatch && subs[Number(indexMatch[1]) - 1] !== undefined
+      ? String(subs[Number(indexMatch[1]) - 1])
+      : content;
+    text = text.split(`$${name}$`).join(value);
+  });
+  return text;
+}
 
 const storage = {};
 const storageListeners = [];
@@ -59,6 +83,10 @@ globalThis.chrome = {
   },
   permissions: {
     contains: async () => true,
+  },
+  i18n: {
+    getMessage,
+    getUILanguage: () => 'zh-CN',
   },
 };
 
@@ -250,6 +278,8 @@ function createDavServer() {
   });
   assert.strictEqual(badAuth.ok, false);
   assert.ok(badAuth.message.includes('认证'), badAuth.message);
+  // i18n mock 生效：错误文案来自 zh_CN 消息目录
+  assert.strictEqual(badAuth.message, zhMessages.bgTestAuthFailed.message);
 
   await dav.close();
   console.log('ok - WebDAV 同步集成测试通过');

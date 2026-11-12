@@ -1,54 +1,65 @@
 // 常见 WebDAV 服务商预设：固定地址的只需填账号和密钥
+// name / hint 只保存 i18n key，渲染时用 I18n.t 取当前语言的文案
 const WEBDAV_PRESETS = [
   {
     id: 'jianguoyun',
-    name: '坚果云',
+    nameKey: 'providerJianguoyun',
     url: 'https://dav.jianguoyun.com/dav/',
-    hint: '账号填注册邮箱；密钥填「账户信息 → 安全选项 → 第三方应用管理」里生成的应用密码。'
+    hintKey: 'providerJianguoyunHint'
   },
   {
     id: 'pcloud',
-    name: 'pCloud',
+    nameKey: 'providerPcloud',
     url: 'https://webdav.pcloud.com/',
-    hint: '账号填 pCloud 邮箱；密钥填密码（建议使用应用专用密码）。'
+    hintKey: 'providerPcloudHint'
   },
   {
     id: 'yandex',
-    name: 'Yandex Disk',
+    nameKey: 'providerYandex',
     url: 'https://webdav.yandex.ru/',
-    hint: '账号填 Yandex 邮箱；密钥填「应用密码」，不是登录密码。'
+    hintKey: 'providerYandexHint'
   },
   {
     id: 'infini-cloud',
-    name: 'InfiniCLOUD',
+    nameKey: 'providerInfiniCloud',
     url: 'https://your-server.teracloud.jp/dav/',
-    hint: '把 your-server 替换为注册时分配的服务器名。'
+    hintKey: 'providerInfiniCloudHint'
   },
   {
     id: 'nextcloud',
-    name: 'Nextcloud',
+    nameKey: 'providerNextcloud',
     url: 'https://your-host/remote.php/dav/files/your-username/',
-    hint: '替换 your-host 和 your-username，地址需以 / 结尾。'
+    hintKey: 'providerNextcloudHint'
   },
   {
     id: 'synology',
-    name: '群晖 NAS',
+    nameKey: 'providerSynology',
     url: 'https://your-host:5006/',
-    hint: '先在 DSM 中开启 WebDAV Server；HTTPS 默认端口 5006。'
+    hintKey: 'providerSynologyHint'
   },
   {
     id: 'alist',
-    name: 'AList',
+    nameKey: 'providerAlist',
     url: 'http://your-host:5244/dav/',
-    hint: 'AList 默认端口 5244；本地 HTTP 地址也可使用。'
+    hintKey: 'providerAlistHint'
   },
   {
     id: 'custom',
-    name: '自定义',
+    nameKey: 'providerCustom',
     url: '',
-    hint: '填写已存在的 WebDAV 目录地址，需以 / 结尾；同步文件会写入该目录下。'
+    hintKey: 'providerCustomHint'
   }
 ];
+
+// 默认分组在存储里始终是 SyncCore.DEFAULT_GROUP_NAME（跨设备身份），
+// 只有界面显示时才翻译成当前语言。
+function displayGroupName(group) {
+  if (!group) return '';
+  if (group.id === SyncCore.DEFAULT_GROUP_ID && group.name === SyncCore.DEFAULT_GROUP_NAME) {
+    return I18n.t('groupDefault');
+  }
+  return group.name;
+}
 
 // 书签管理类
 class BookmarkManager {
@@ -115,7 +126,7 @@ class BookmarkManager {
     } catch (error) {
       console.error('加载书签失败:', error);
       this.bookmarks = [];
-      this.groups = [{ id: 'default', name: '默认分组', order: 0, updatedAt: 0 }];
+      this.groups = [{ id: SyncCore.DEFAULT_GROUP_ID, name: SyncCore.DEFAULT_GROUP_NAME, order: 0, updatedAt: 0 }];
       this.tombstones = { bookmarks: {}, groups: {} };
     }
   }
@@ -230,19 +241,19 @@ class BookmarkManager {
     container.innerHTML = `
       <div class="search">
         <span class="search-icon">⌕</span>
-        <input id="search-input" type="text" placeholder="搜索书签..." value="${this.escapeHtml(this.searchKeyword)}">
+        <input id="search-input" type="text" placeholder="${this.escapeHtml(I18n.t('searchPlaceholder'))}" value="${this.escapeHtml(this.searchKeyword)}">
       </div>
       <div class="icon-btns">
-        <button id="sync-btn" class="icon-btn sync-btn" title="云同步">☁</button>
-        <button id="add-bookmark" class="icon-btn" title="添加书签">+</button>
-        <button id="add-group" class="icon-btn" title="添加分组">▤</button>
-        <button id="import-btn" class="icon-btn" title="导入">↓</button>
-        <button id="export-btn" class="icon-btn" title="导出">↑</button>
+        <button id="sync-btn" class="icon-btn sync-btn" title="${this.escapeHtml(I18n.t('syncTitle'))}">☁</button>
+        <button id="add-bookmark" class="icon-btn" title="${this.escapeHtml(I18n.t('addBookmarkTitle'))}">+</button>
+        <button id="add-group" class="icon-btn" title="${this.escapeHtml(I18n.t('addGroupTitle'))}">▤</button>
+        <button id="import-btn" class="icon-btn" title="${this.escapeHtml(I18n.t('importTitle'))}">↓</button>
+        <button id="export-btn" class="icon-btn" title="${this.escapeHtml(I18n.t('exportTitle'))}">↑</button>
       </div>
       <div class="sort">
-        <span class="sort-label">排序</span>
-        <button id="sort-custom" class="sort-btn ${this.sortBy === 'custom' ? 'active' : ''}">自定义</button>
-        <button id="sort-frequency" class="sort-btn ${this.sortBy === 'frequency' ? 'active' : ''}">按访问频次</button>
+        <span class="sort-label">${this.escapeHtml(I18n.t('sortLabel'))}</span>
+        <button id="sort-custom" class="sort-btn ${this.sortBy === 'custom' ? 'active' : ''}">${this.escapeHtml(I18n.t('sortCustom'))}</button>
+        <button id="sort-frequency" class="sort-btn ${this.sortBy === 'frequency' ? 'active' : ''}">${this.escapeHtml(I18n.t('sortFrequency'))}</button>
       </div>
     `;
 
@@ -286,8 +297,8 @@ class BookmarkManager {
       const empty = document.createElement('div');
       empty.className = 'empty';
       empty.innerHTML = `
-        <h2>还没有书签</h2>
-        <p>点击右上角 + 按钮开始添加你喜欢的网站</p>
+        <h2>${this.escapeHtml(I18n.t('emptyTitle'))}</h2>
+        <p>${this.escapeHtml(I18n.t('emptyDesc'))}</p>
       `;
       container.appendChild(empty);
       return;
@@ -314,15 +325,15 @@ class BookmarkManager {
       col.innerHTML = `
         <div class="group-header" data-action="toggle">
           <span class="group-toggle">▾</span>
-          <span class="group-name">${this.escapeHtml(group.name)}</span>
+          <span class="group-name">${this.escapeHtml(displayGroupName(group))}</span>
           <span class="group-count">${groupBookmarks.length}</span>
           <div class="group-header-actions">
-            <button class="icon-btn" data-action="add-bookmark" title="在此分组添加书签">+</button>
+            <button class="icon-btn" data-action="add-bookmark" title="${this.escapeHtml(I18n.t('addInGroupTitle'))}">+</button>
           </div>
         </div>
         <div class="group-body">
           ${groupBookmarks.length === 0
-            ? `<div class="column-empty">暂无书签</div>`
+            ? `<div class="column-empty">${this.escapeHtml(I18n.t('emptyColumn'))}</div>`
             : groupBookmarks.map(b => this.renderRowHtml(b)).join('')
           }
         </div>
@@ -340,7 +351,7 @@ class BookmarkManager {
           <img alt="${this.escapeHtml(bookmark.title)}" loading="lazy" decoding="async">
         </div>
         <span class="row-title">${this.escapeHtml(bookmark.title)}</span>
-        <button class="row-delete" title="删除">×</button>
+        <button class="row-delete" title="${this.escapeHtml(I18n.t('delete'))}">×</button>
       </div>
     `;
   }
@@ -499,7 +510,7 @@ class BookmarkManager {
 
   async deleteGroup(groupId) {
     if (groupId === 'default') return;
-    const confirmed = confirm('删除分组后，该分组下的书签将移至默认分组。确定删除吗？');
+    const confirmed = confirm(I18n.t('confirmDeleteGroup'));
     if (!confirmed) return;
 
     const group = this.groups.find(g => g.id === groupId);
@@ -553,7 +564,7 @@ class BookmarkManager {
   }
 
   async deleteBookmark(id) {
-    if (!confirm('确定要删除这个书签吗？')) return;
+    if (!confirm(I18n.t('confirmDeleteBookmark'))) return;
     const index = this.bookmarks.findIndex(b => b.id === id);
     if (index !== -1) {
       const [removed] = this.bookmarks.splice(index, 1);
@@ -602,7 +613,7 @@ class BookmarkManager {
     this.groups.forEach(group => {
       const option = document.createElement('option');
       option.value = group.id;
-      option.textContent = group.name;
+      option.textContent = displayGroupName(group);
       if (group.id === this.currentGroupId) option.selected = true;
       select.appendChild(option);
     });
@@ -619,7 +630,7 @@ class BookmarkManager {
 
     const deleteItem = document.createElement('div');
     deleteItem.className = 'context-menu-item';
-    deleteItem.textContent = '删除分组';
+    deleteItem.textContent = I18n.t('deleteGroupMenu');
     deleteItem.addEventListener('click', () => {
       this.deleteGroup(groupId);
       menu.remove();
@@ -648,7 +659,7 @@ class BookmarkManager {
     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     const a = document.createElement('a');
     a.href = url;
-    a.download = `书签备份-${dateStr}.json`;
+    a.download = `${I18n.t('exportFilePrefix')}-${dateStr}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -661,12 +672,12 @@ class BookmarkManager {
       const text = await file.text();
       data = JSON.parse(text);
     } catch (error) {
-      alert('导入失败：文件格式不正确或无法解析');
+      alert(I18n.t('importParseFailed'));
       return;
     }
 
     if (!data || typeof data !== 'object' || !Array.isArray(data.bookmarks)) {
-      alert('导入失败：文件格式不正确（缺少 bookmarks 数据）');
+      alert(I18n.t('importMissingBookmarks'));
       return;
     }
 
@@ -737,9 +748,9 @@ class BookmarkManager {
     this.render();
 
     if (added === 0 && skipped === 0) {
-      alert('导入完成：文件中没有可导入的书签');
+      alert(I18n.t('importNothing'));
     } else {
-      alert(`导入完成：新增 ${added} 个书签，跳过 ${skipped} 个重复，新建 ${newGroups} 个分组`);
+      alert(I18n.t('importDone', [String(added), String(skipped), String(newGroups)]));
     }
   }
 
@@ -784,7 +795,7 @@ class BookmarkManager {
           resolve({ ok: false, error: chrome.runtime.lastError.message });
           return;
         }
-        resolve(response || { ok: false, error: '后台没有响应' });
+        resolve(response || { ok: false, error: I18n.t('backgroundNoResponse') });
       });
     });
   }
@@ -812,18 +823,18 @@ class BookmarkManager {
     if (!button) return;
     const status = this.syncStatus;
     if (!status) {
-      button.title = '云同步';
+      button.title = I18n.t('syncTitle');
       return;
     }
     button.classList.toggle('sync-on', !!status.enabled && !!status.lastSyncOk);
     button.classList.toggle('sync-error', !!status.enabled && !status.lastSyncOk);
     if (!status.enabled) {
-      button.title = '云同步（未开启）';
+      button.title = I18n.t('syncTitleOff');
       return;
     }
     button.title = status.lastSyncOk
-      ? `云同步已开启 · ${this.formatSyncTime(status.lastSyncAt)}`
-      : `云同步异常：${status.lastSyncError || '尚未同步'}`;
+      ? I18n.t('syncEnabledStatus', [this.formatSyncTime(status.lastSyncAt)])
+      : I18n.t('syncErrorStatus', [status.lastSyncError || I18n.t('syncNotSynced')]);
   }
 
   renderSyncProviders() {
@@ -832,7 +843,7 @@ class BookmarkManager {
     WEBDAV_PRESETS.forEach((preset) => {
       const option = document.createElement('option');
       option.value = preset.id;
-      option.textContent = preset.name;
+      option.textContent = I18n.t(preset.nameKey);
       select.appendChild(option);
     });
   }
@@ -841,7 +852,7 @@ class BookmarkManager {
     const preset = WEBDAV_PRESETS.find(item => item.id === providerId);
     if (!preset) return;
     const hint = document.getElementById('sync-url-hint');
-    if (hint) hint.textContent = preset.hint || '';
+    if (hint) hint.textContent = preset.hintKey ? I18n.t(preset.hintKey) : '';
     if (!overwriteUrl) return;
     const urlInput = document.getElementById('sync-url');
     if (urlInput) urlInput.value = preset.url || '';
@@ -859,14 +870,14 @@ class BookmarkManager {
 
     const passwordInput = document.getElementById('sync-password');
     passwordInput.value = '';
-    passwordInput.placeholder = config.hasPassword ? '已保存密码，留空则不修改' : '填写应用密码或密钥';
+    passwordInput.placeholder = config.hasPassword ? I18n.t('syncPasswordKeep') : I18n.t('syncPasswordEmpty');
 
     this.applySyncPreset(config.providerId || 'custom', false);
 
     if (config.enabled) {
       const message = config.lastSyncOk
-        ? `同步已开启，最近同步：${this.formatSyncTime(config.lastSyncAt)}`
-        : `同步异常：${config.lastSyncError || '尚未成功同步'}`;
+        ? I18n.t('syncConfigEnabled', [this.formatSyncTime(config.lastSyncAt)])
+        : I18n.t('syncConfigError', [config.lastSyncError || I18n.t('syncNeverSynced')]);
       this.setSyncStatus(message, config.lastSyncOk ? 'ok' : 'error');
     } else {
       this.setSyncStatus('');
@@ -893,49 +904,49 @@ class BookmarkManager {
     let origin;
     try {
       const parsed = new URL(url);
-      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') throw new Error('协议不支持');
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') throw new Error(I18n.t('protocolUnsupported'));
       origin = `${parsed.protocol}//${parsed.host}/*`;
     } catch {
-      return { ok: false, error: 'WebDAV 地址格式不正确，需要以 http:// 或 https:// 开头' };
+      return { ok: false, error: I18n.t('syncUrlInvalid') };
     }
 
     try {
       const granted = await chrome.permissions.request({ origins: [origin] });
-      if (!granted) return { ok: false, error: '未授权访问该域名，无法同步' };
+      if (!granted) return { ok: false, error: I18n.t('syncOriginDenied') };
       return { ok: true, origin };
     } catch (error) {
-      return { ok: false, error: `授权失败：${error.message}` };
+      return { ok: false, error: I18n.t('syncAuthFailedPermission', [error && error.message ? error.message : String(error)]) };
     }
   }
 
   async saveSyncConfig() {
     const form = this.collectSyncForm();
     if (!form.url) {
-      this.setSyncStatus('请填写 WebDAV 地址', 'error');
+      this.setSyncStatus(I18n.t('syncUrlRequired'), 'error');
       return;
     }
 
-    this.setSyncStatus('正在请求访问该域名的权限...');
+    this.setSyncStatus(I18n.t('syncRequestingPermission'));
     const permission = await this.requestSyncOriginPermission(form.url);
     if (!permission.ok) {
       this.setSyncStatus(permission.error, 'error');
       return;
     }
 
-    this.setSyncStatus('正在保存并同步...');
+    this.setSyncStatus(I18n.t('syncSaving'));
     const response = await this.sendSyncMessage({ action: 'sync:saveConfig', config: form });
     if (!response || !response.ok) {
-      this.setSyncStatus((response && response.error) || '保存失败', 'error');
+      this.setSyncStatus((response && response.error) || I18n.t('syncSaveFailed'), 'error');
       return;
     }
 
     this.updateSyncButton(response);
     if (response.sync && response.sync.ok === false) {
-      this.setSyncStatus(`配置已保存，但首次同步失败：${response.sync.error}`, 'error');
+      this.setSyncStatus(I18n.t('syncSavedFirstFailed', [response.sync.error || I18n.t('syncSaveFailed')]), 'error');
       return;
     }
 
-    this.setSyncStatus(`同步完成 · ${this.formatSyncTime(response.lastSyncAt)}`, 'ok');
+    this.setSyncStatus(I18n.t('syncDone', [this.formatSyncTime(response.lastSyncAt)]), 'ok');
     this.renderSyncProviders();
     await this.reloadFromStorage();
   }
@@ -943,7 +954,7 @@ class BookmarkManager {
   async testSyncConnection() {
     const form = this.collectSyncForm();
     if (!form.url) {
-      this.setSyncStatus('请先填写 WebDAV 地址', 'error');
+      this.setSyncStatus(I18n.t('syncUrlRequiredFirst'), 'error');
       return;
     }
     const permission = await this.requestSyncOriginPermission(form.url);
@@ -951,22 +962,22 @@ class BookmarkManager {
       this.setSyncStatus(permission.error, 'error');
       return;
     }
-    this.setSyncStatus('正在测试连接...');
+    this.setSyncStatus(I18n.t('syncTesting'));
     const response = await this.sendSyncMessage({ action: 'sync:testConnection', config: form });
     this.setSyncStatus(
-      (response && response.message) || (response && response.ok ? '连接成功' : '连接失败'),
+      (response && response.message) || (response && response.ok ? I18n.t('syncConnectSuccess') : I18n.t('syncConnectFailed')),
       response && response.ok ? 'ok' : 'error'
     );
   }
 
   async disableSync() {
-    if (!confirm('确定关闭云同步吗？本地书签不会被删除。')) return;
+    if (!confirm(I18n.t('confirmDisableSync'))) return;
     const response = await this.sendSyncMessage({ action: 'sync:disable' });
     if (response && response.ok) {
       this.updateSyncButton(response);
-      this.setSyncStatus('云同步已关闭，本地数据保持不变', 'ok');
+      this.setSyncStatus(I18n.t('syncDisabled'), 'ok');
     } else {
-      this.setSyncStatus((response && response.error) || '关闭失败', 'error');
+      this.setSyncStatus((response && response.error) || I18n.t('syncCloseFailed'), 'error');
     }
   }
 
@@ -978,7 +989,7 @@ class BookmarkManager {
   }
 
   formatSyncTime(timestamp) {
-    if (!timestamp) return '尚未同步';
+    if (!timestamp) return I18n.t('syncNotSynced');
     const date = new Date(timestamp);
     const pad = (value) => String(value).padStart(2, '0');
     const time = `${pad(date.getHours())}:${pad(date.getMinutes())}`;
@@ -1096,5 +1107,6 @@ class BookmarkManager {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  I18n.localizeDocument(document);
   new BookmarkManager();
 });

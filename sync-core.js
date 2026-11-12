@@ -6,11 +6,20 @@
   const SCHEMA_VERSION = 2;
   const APP_ID = 'custom-newtab';
   const DEFAULT_GROUP_ID = 'default';
+  // 默认分组的名称是「跨设备身份」：分组以名称为键合并同步，绝不能本地化或翻译。
+  // 界面上的显示文案由 i18n（groupDefault）负责，存储值永远保持这里的中文常量。
   const DEFAULT_GROUP_NAME = '默认分组';
   const TOMBSTONE_TTL = 90 * 24 * 60 * 60 * 1000; // 删除标记保留 90 天
 
   function randomId() {
     return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  }
+
+  // 带错误码的异常：message 保持中文原文，code 供 background 翻译成界面语言
+  function createSyncError(code, message) {
+    const error = new Error(message);
+    error.code = code;
+    return error;
   }
 
   // 书签身份统一用规范化 URL，避免各设备自增 id 冲突
@@ -268,7 +277,7 @@
   // 兼容旧版导出文件（version: 1，没有 visits/updatedAt）
   function coerceSnapshot(data) {
     if (!data || typeof data !== 'object') {
-      throw new Error('同步文件内容不是合法 JSON 对象');
+      throw createSyncError('SYNC_FILE_NOT_OBJECT', '同步文件内容不是合法 JSON 对象');
     }
 
     if (Array.isArray(data.bookmarks)) {
@@ -328,7 +337,7 @@
       }
     }
 
-    throw new Error('无法识别的同步文件格式（缺少 bookmarks 数据）');
+    throw createSyncError('SYNC_FILE_UNKNOWN_FORMAT', '无法识别的同步文件格式（缺少 bookmarks 数据）');
   }
 
   function mergeSnapshots(localSnapshot, remoteSnapshot, now) {

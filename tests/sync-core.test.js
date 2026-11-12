@@ -171,4 +171,26 @@ test('signature 能识别状态是否变化', () => {
   assert.notStrictEqual(S.signature(state), S.signature(clone));
 });
 
+test('同步文件不是 JSON 对象时抛出带错误码的异常', () => {
+  assert.throws(
+    () => S.coerceSnapshot('not an object'),
+    (error) => {
+      assert.strictEqual(error.code, 'SYNC_FILE_NOT_OBJECT');
+      assert.strictEqual(error.message, '同步文件内容不是合法 JSON 对象');
+      return true;
+    }
+  );
+});
+
+test('同步文件缺少 bookmarks 数据时抛出带错误码的异常', () => {
+  assert.throws(
+    () => S.coerceSnapshot({ schema: 2, groups: [] }),
+    (error) => {
+      assert.strictEqual(error.code, 'SYNC_FILE_UNKNOWN_FORMAT');
+      assert.strictEqual(error.message, '无法识别的同步文件格式（缺少 bookmarks 数据）');
+      return true;
+    }
+  );
+});
+
 console.log(`\n${passed} tests passed`);

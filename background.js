@@ -1,7 +1,7 @@
 // Background Service Worker for Chrome Extension
 // 负责默认数据初始化 + WebDAV 云同步引擎
 
-importScripts('sync-core.js');
+importScripts('sync-core.js', 'i18n.js');
 
 const DEFAULT_SYNC_FILENAME = 'newtab-bookmarks.json';
 const SYNC_PERIOD_ALARM = 'sync-periodic';
@@ -24,6 +24,20 @@ const DEFAULT_SYNC_CONFIG = {
 };
 
 let syncInFlight = null;
+
+// sync-core 抛出的可识别错误码 → 界面语言的消息 key
+const SYNC_ERROR_MESSAGE_KEYS = {
+  SYNC_FILE_NOT_OBJECT: 'bgSyncFileNotObject',
+  SYNC_FILE_UNKNOWN_FORMAT: 'bgSyncFileUnknownFormat',
+};
+
+// 把错误转换成当前界面语言的文案：有已知错误码就用消息目录，否则沿用原始 message
+function localizeSyncError(error) {
+  if (error && error.code && SYNC_ERROR_MESSAGE_KEYS[error.code]) {
+    return I18n.t(SYNC_ERROR_MESSAGE_KEYS[error.code]);
+  }
+  return (error && error.message) ? error.message : '';
+}
 
 // ==================== 安装 / 启动 ====================
 
@@ -48,8 +62,8 @@ async function initializeDefaultBookmarks() {
 
     if (!result.groups || result.groups.length === 0) {
       const defaultGroups = [{
-        id: 'default',
-        name: '默认分组',
+        id: SyncCore.DEFAULT_GROUP_ID,
+        name: SyncCore.DEFAULT_GROUP_NAME,
         order: 0,
         updatedAt: 0,
       }];
@@ -160,7 +174,7 @@ async function applySyncAlarms() {
 function normalizeDavBase(rawUrl) {
   const value = String(rawUrl || '').trim();
   if (!/^https?:\/\//i.test(value)) {
-    throw new Error('WebDAV 地址必须以 http:// 或 https:// 开头');
+    throw new Error(I18n.t('bgUrlInvalid'));
   }
   return value.endsWith('/') ? value : `${value}/`;
 }
@@ -179,7 +193,7 @@ function originPattern(rawUrl) {
 async function assertOriginPermission(rawUrl) {
   const granted = await chrome.permissions.contains({ origins: [originPattern(rawUrl)] });
   if (!granted) {
-    throw new Error('尚未授权访问该 WebDAV 域名，请在同步设置中重新保存以完成授权');
+    throw new Error(I18n.t('bgOriginNotGranted'));
   }
 }
 
@@ -204,22 +218,28 @@ function withCacheBuster(url) {
   return `${url}${separator}_=${Date.now()}`;
 }
 
-function davError(response, action) {
+// actionKey 是 i18n 消息 key（bgActionRead / bgActionWrite / bgActionTest）
+function davError(response, actionKey) {
   const status = response.status;
-  if (status === 401) return new Error('认证失败（401）：账号或应用密码不正确');
-  if (status === 403) return new Error('无权限（403）：请检查 WebDAV 地址与账号权限');
-  if (status === 404) return new Error(`路径不存在（404）：请确认 WebDAV 地址是已存在的目录`);
-  if (status === 405) return new Error('服务器不允许该操作（405）：请确认地址是 WebDAV 目录');
-  if (status === 409) return new Error('目录不存在（409）：请先在网盘中创建同步目录');
-  if (status === 507) return new Error('网盘空间不足（507）');
-  return new Error(`WebDAV ${action}失败：HTTP ${status} ${response.statusText || ''}`.trim());
+  if (status === 401) return new Error(I18n.t('bgAuth401'));
+  if (status === 403) return new Error(I18n.t('bgForbidden403'));
+  if (status === 404) return new Error(I18n.t('bgNotFound404'));
+  if (status === 405) return new Error(I18n.t('bgMethodNotAllowed405'));
+  if (status === 409) return new Error(I18n.t('bgConflict409'));
+  if (status === 507) return new Error(I18n.t('bgInsufficientStorage507'));
+  const message = I18n.t('bgDavRequestFailed', [
+    I18n.t(actionKey),
+    String(status),
+    String(response.statusText || '')
+  ]);
+  return new Error(message.trim());
 }
 
 async function davFetch(url, init) {
   try {
     return await fetch(url, init);
   } catch {
-    throw new Error('无法连接 WebDAV：请检查地址是否正确、是否已授权该域名，以及网络或 HTTPS 证书是否正常');
+    throw new Error(I18n.t('bgNetworkError'));
   }
 }
 
@@ -240,7 +260,7 @@ async function davGet(config) {
     return { snapshot: null, etag: null };
   }
   if (!response.ok) {
-    throw davError(response, '读取');
+    throw davError(response, 'bgActionRead');
   }
 
   const text = await response.text();
@@ -252,7 +272,7 @@ async function davGet(config) {
   try {
     data = JSON.parse(text);
   } catch {
-    throw new Error('远端同步文件不是合法的 JSON，可能被其他程序改坏了');
+    throw new Error(I18n.t('bgRemoteInvalidJson'));
   }
 
   return { snapshot: data, etag: response.headers.get('ETag') };
@@ -281,7 +301,7 @@ async function davPut(config, snapshot, etag) {
     return { conflict: true };
   }
   if (!response.ok) {
-    throw davError(response, '写入');
+    throw davError(response, 'bgActionWrite');
   }
 
   return { conflict: false, etag: response.headers.get('ETag') || etag || null };
@@ -302,16 +322,16 @@ async function davTest(config) {
     });
 
     if (response.status === 404) {
-      return { ok: true, message: '连接成功，远端暂无同步文件（首次同步会自动创建）' };
+      return { ok: true, message: I18n.t('bgTestNoRemoteFile') };
     }
     if (response.status === 401) {
-      return { ok: false, message: '认证失败：账号或应用密码不正确' };
+      return { ok: false, message: I18n.t('bgTestAuthFailed') };
     }
     if (response.status === 403) {
-      return { ok: false, message: '无权限：请检查目录路径与账号权限' };
+      return { ok: false, message: I18n.t('bgTestForbidden') };
     }
     if (!response.ok) {
-      return { ok: false, message: davError(response, '测试').message };
+      return { ok: false, message: davError(response, 'bgActionTest').message };
     }
 
     const text = await response.text();
@@ -319,12 +339,12 @@ async function davTest(config) {
       try {
         SyncCore.coerceSnapshot(JSON.parse(text));
       } catch {
-        return { ok: false, message: '远端文件已存在，但不是本扩展的同步格式' };
+        return { ok: false, message: I18n.t('bgTestWrongFormat') };
       }
     }
-    return { ok: true, message: '连接成功，已找到远端同步文件' };
+    return { ok: true, message: I18n.t('bgTestSuccess') };
   } catch (error) {
-    return { ok: false, message: error && error.message ? error.message : '连接失败' };
+    return { ok: false, message: error && error.message ? error.message : I18n.t('bgTestFailedFallback') };
   }
 }
 
@@ -388,16 +408,16 @@ async function runSync(config) {
     localState = await readLocalState(deviceId);
   }
 
-  throw new Error('同步冲突：远端文件正在被其他设备修改，请稍后重试');
+  throw new Error(I18n.t('bgSyncConflict'));
 }
 
 async function performSync(options = {}) {
   const config = await getSyncConfig();
   if (!config.enabled) {
-    return { ok: false, error: '云同步未开启', ...publicStatus(config) };
+    return { ok: false, error: I18n.t('bgSyncNotEnabled'), ...publicStatus(config) };
   }
   if (!config.url) {
-    return { ok: false, error: '请先配置 WebDAV 地址', ...publicStatus(config) };
+    return { ok: false, error: I18n.t('bgSyncUrlMissing'), ...publicStatus(config) };
   }
 
   // 打开新标签页时的轻量触发：2 分钟内且本地无变化则跳过
@@ -423,7 +443,7 @@ async function performSync(options = {}) {
       });
       return { ok: true, ...publicStatus(next) };
     } catch (error) {
-      const message = error && error.message ? error.message : String(error);
+      const message = localizeSyncError(error) || String(error);
       const next = await setSyncConfig({
         lastSyncAt: Date.now(),
         lastSyncOk: false,
@@ -487,7 +507,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action.startsWith('sync:')) {
     handleSyncMessage(request)
       .then(sendResponse)
-      .catch(error => sendResponse({ ok: false, error: error.message }));
+      .catch(error => sendResponse({ ok: false, error: localizeSyncError(error) }));
     return true;
   }
 });
@@ -505,7 +525,7 @@ async function handleSyncMessage(request) {
       const url = String(input.url || '').trim();
 
       if (input.enabled !== false && !/^https?:\/\//i.test(url)) {
-        return { ok: false, error: 'WebDAV 地址必须以 http:// 或 https:// 开头' };
+        return { ok: false, error: I18n.t('bgUrlInvalid') };
       }
 
       const patch = {
@@ -562,7 +582,7 @@ async function handleSyncMessage(request) {
     }
 
     default:
-      return { ok: false, error: `未知的同步指令：${request.action}` };
+      return { ok: false, error: I18n.t('bgUnknownSyncAction', [request.action]) };
   }
 }
 
@@ -575,7 +595,7 @@ async function addBookmarkFromMessage(bookmarkData) {
 
     const exists = bookmarks.find(b => b.url === bookmarkData.url);
     if (exists) {
-      throw new Error('该书签已存在');
+      throw new Error(I18n.t('bgBookmarkExists'));
     }
 
     const newBookmark = {

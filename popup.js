@@ -1,3 +1,13 @@
+// 默认分组在存储里始终是 SyncCore.DEFAULT_GROUP_NAME（跨设备身份），
+// 只有界面显示时才翻译成当前语言。
+function displayGroupName(group) {
+  if (!group) return '';
+  if (group.id === SyncCore.DEFAULT_GROUP_ID && group.name === SyncCore.DEFAULT_GROUP_NAME) {
+    return I18n.t('groupDefault');
+  }
+  return group.name;
+}
+
 // Popup管理类
 class PopupManager {
   constructor() {
@@ -68,7 +78,7 @@ class PopupManager {
     const ensuredUrl = this.ensureHttps(url);
 
     submitBtn.disabled = true;
-    submitBtn.textContent = '添加中...';
+    submitBtn.textContent = I18n.t('adding');
 
     try {
       const bookmarks = await this.loadBookmarks();
@@ -76,7 +86,7 @@ class PopupManager {
       // 检查是否已存在相同URL的书签
       const existingBookmark = bookmarks.find(b => b.url === ensuredUrl);
       if (existingBookmark) {
-        this.showMessage('该书签已存在！', 'error');
+        this.showMessage(I18n.t('bookmarkExists'), 'error');
         return;
       }
 
@@ -96,7 +106,7 @@ class PopupManager {
       bookmarks.push(bookmark);
       await this.saveBookmarks(bookmarks);
 
-      this.showMessage('书签添加成功！', 'success');
+      this.showMessage(I18n.t('addSuccess'), 'success');
 
       // 2秒后关闭弹窗
       setTimeout(() => {
@@ -105,10 +115,10 @@ class PopupManager {
 
     } catch (error) {
       console.error('添加书签失败:', error);
-      this.showMessage('添加失败，请重试！', 'error');
+      this.showMessage(I18n.t('addFailed'), 'error');
     } finally {
       submitBtn.disabled = false;
-      submitBtn.textContent = '添加到书签';
+      submitBtn.textContent = I18n.t('addToBookmarks');
     }
   }
 
@@ -247,13 +257,13 @@ class PopupManager {
 
       // 确保默认分组存在
       if (groups.length === 0) {
-        groups = [{ id: 'default', name: '默认分组', order: 0 }];
+        groups = [{ id: SyncCore.DEFAULT_GROUP_ID, name: SyncCore.DEFAULT_GROUP_NAME, order: 0 }];
       }
 
       return groups;
     } catch (error) {
       console.error('加载分组失败:', error);
-      return [{ id: 'default', name: '默认分组', order: 0 }];
+      return [{ id: SyncCore.DEFAULT_GROUP_ID, name: SyncCore.DEFAULT_GROUP_NAME, order: 0 }];
     }
   }
 
@@ -269,7 +279,7 @@ class PopupManager {
     groups.forEach(group => {
       const option = document.createElement('option');
       option.value = group.id;
-      option.textContent = group.name;
+      option.textContent = displayGroupName(group);
 
       // 默认选中当前分组
       if (group.id === currentGroupId) {
@@ -283,5 +293,6 @@ class PopupManager {
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {
+  I18n.localizeDocument(document);
   new PopupManager();
 });

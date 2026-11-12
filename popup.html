@@ -1,42 +1,43 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>添加到书签</title>
+  <title data-i18n-title="popupTitle">Add to Bookmarks</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
   <div class="popup-container">
     <header class="popup-header">
-      <h2>添加到书签</h2>
+      <h2 data-i18n="addToBookmarks">Add to bookmarks</h2>
     </header>
 
     <div id="current-page" class="current-page">
       <div class="page-info">
         <div class="page-favicon">
-          <img id="page-favicon" src="" alt="页面图标">
+          <img id="page-favicon" src="" alt="Page icon" data-i18n-alt="pageIconAlt">
         </div>
         <div class="page-details">
-          <div id="page-title" class="page-title">加载中...</div>
-          <div id="page-url" class="page-url">加载中...</div>
+          <div id="page-title" class="page-title" data-i18n="loading">Loading...</div>
+          <div id="page-url" class="page-url" data-i18n="loading">Loading...</div>
         </div>
       </div>
     </div>
 
     <form id="add-form" class="add-form">
       <div class="form-group">
-        <label for="bookmark-title">标题</label>
+        <label for="bookmark-title" data-i18n="formTitle">Title</label>
         <input
           id="bookmark-title"
           type="text"
           required
-          placeholder="输入书签标题"
+          placeholder="Enter bookmark title"
+          data-i18n-placeholder="placeholderBookmarkTitle"
         />
       </div>
 
       <div class="form-group">
-        <label for="bookmark-url">网址</label>
+        <label for="bookmark-url" data-i18n="formUrl">URL</label>
         <input
           id="bookmark-url"
           type="url"
@@ -46,15 +47,15 @@
       </div>
 
       <div class="form-group">
-        <label for="bookmark-group">分组</label>
+        <label for="bookmark-group" data-i18n="formGroup">Group</label>
         <select id="bookmark-group" required>
           <!-- 分组选项动态生成 -->
         </select>
       </div>
 
       <div class="form-actions">
-        <button type="submit" id="submit-btn" class="add-btn">
-          添加到书签
+        <button type="submit" id="submit-btn" class="add-btn" data-i18n="addToBookmarks">
+          Add to bookmarks
         </button>
       </div>
     </form>
@@ -62,12 +63,14 @@
     <div id="message" class="message" style="display: none;"></div>
 
     <div class="popup-footer">
-      <button id="view-bookmarks" class="view-bookmarks-btn">
-        查看所有书签
+      <button id="view-bookmarks" class="view-bookmarks-btn" data-i18n="viewAllBookmarks">
+        View all bookmarks
       </button>
     </div>
   </div>
 
+  <script src="sync-core.js"></script>
+  <script src="i18n.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

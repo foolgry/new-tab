@@ -1,0 +1,436 @@
+{
+  "extName": {
+    "message": "Custom New Tab - Bookmark Manager"
+  },
+  "extDescription": {
+    "message": "A clean, elegant Chrome new tab page with bookmark management, visit-frequency sorting, and WebDAV cloud sync."
+  },
+  "newtabTitle": {
+    "message": "My Bookmarks"
+  },
+  "popupTitle": {
+    "message": "Add to Bookmarks"
+  },
+  "groupDefault": {
+    "message": "Default"
+  },
+  "cancel": {
+    "message": "Cancel"
+  },
+  "add": {
+    "message": "Add"
+  },
+  "delete": {
+    "message": "Delete"
+  },
+  "loading": {
+    "message": "Loading..."
+  },
+  "pageIconAlt": {
+    "message": "Page icon"
+  },
+  "searchPlaceholder": {
+    "message": "Search bookmarks..."
+  },
+  "syncTitle": {
+    "message": "Cloud sync"
+  },
+  "syncTitleOff": {
+    "message": "Cloud sync (off)"
+  },
+  "addBookmarkTitle": {
+    "message": "Add Bookmark"
+  },
+  "addGroupTitle": {
+    "message": "Add Group"
+  },
+  "importTitle": {
+    "message": "Import"
+  },
+  "exportTitle": {
+    "message": "Export"
+  },
+  "sortLabel": {
+    "message": "Sort"
+  },
+  "sortCustom": {
+    "message": "Custom"
+  },
+  "sortFrequency": {
+    "message": "By visits"
+  },
+  "emptyTitle": {
+    "message": "No bookmarks yet"
+  },
+  "emptyDesc": {
+    "message": "Click the + button in the top-right corner to start adding your favorite sites"
+  },
+  "addInGroupTitle": {
+    "message": "Add bookmark to this group"
+  },
+  "emptyColumn": {
+    "message": "No bookmarks"
+  },
+  "deleteGroupMenu": {
+    "message": "Delete group"
+  },
+  "formTitle": {
+    "message": "Title"
+  },
+  "formUrl": {
+    "message": "URL"
+  },
+  "formGroup": {
+    "message": "Group"
+  },
+  "formGroupName": {
+    "message": "Group name"
+  },
+  "placeholderBookmarkTitle": {
+    "message": "Enter bookmark title"
+  },
+  "placeholderGroupName": {
+    "message": "Enter group name"
+  },
+  "confirmDeleteGroup": {
+    "message": "Bookmarks in this group will be moved to the default group. Delete this group?"
+  },
+  "confirmDeleteBookmark": {
+    "message": "Delete this bookmark?"
+  },
+  "importParseFailed": {
+    "message": "Import failed: the file format is invalid or could not be parsed"
+  },
+  "importMissingBookmarks": {
+    "message": "Import failed: the file format is invalid (missing bookmarks data)"
+  },
+  "importNothing": {
+    "message": "Import finished: the file contains no bookmarks to import"
+  },
+  "importDone": {
+    "message": "Import finished: $added$ bookmarks added, $skipped$ duplicates skipped, $groups$ new groups created",
+    "placeholders": {
+      "added": {
+        "content": "$1"
+      },
+      "skipped": {
+        "content": "$2"
+      },
+      "groups": {
+        "content": "$3"
+      }
+    }
+  },
+  "exportFilePrefix": {
+    "message": "bookmarks-backup"
+  },
+  "syncModalTitle": {
+    "message": "Cloud Sync (WebDAV)"
+  },
+  "syncProvider": {
+    "message": "Provider"
+  },
+  "syncUrl": {
+    "message": "WebDAV address"
+  },
+  "syncUsername": {
+    "message": "Account"
+  },
+  "syncPassword": {
+    "message": "App password / key"
+  },
+  "syncPasswordKeep": {
+    "message": "Password saved, leave empty to keep it"
+  },
+  "syncPasswordEmpty": {
+    "message": "Enter app password or key"
+  },
+  "syncPasswordPlaceholder": {
+    "message": "Leave empty to keep the saved password"
+  },
+  "syncFilename": {
+    "message": "Sync file name"
+  },
+  "syncNote": {
+    "message": "The first sync merges local and remote bookmarks (deduplicated by URL) and never overwrites either side. The account and password are stored only in the local browser; use the app-specific password provided by your service."
+  },
+  "syncDisable": {
+    "message": "Disable sync"
+  },
+  "syncTest": {
+    "message": "Test connection"
+  },
+  "syncSave": {
+    "message": "Save and sync"
+  },
+  "providerJianguoyun": {
+    "message": "Nutstore"
+  },
+  "providerJianguoyunHint": {
+    "message": "Use your registered email as the account; for the key, use the app password generated under Account Info > Security Options > Third-party app management."
+  },
+  "providerPcloud": {
+    "message": "pCloud"
+  },
+  "providerPcloudHint": {
+    "message": "Use your pCloud email as the account and your password as the key (an app-specific password is recommended)."
+  },
+  "providerYandex": {
+    "message": "Yandex Disk"
+  },
+  "providerYandexHint": {
+    "message": "Use your Yandex email as the account; for the key use the app password, not the login password."
+  },
+  "providerInfiniCloud": {
+    "message": "InfiniCLOUD"
+  },
+  "providerInfiniCloudHint": {
+    "message": "Replace your-server with the server name assigned to you at registration."
+  },
+  "providerNextcloud": {
+    "message": "Nextcloud"
+  },
+  "providerNextcloudHint": {
+    "message": "Replace your-host and your-username; the address must end with /."
+  },
+  "providerSynology": {
+    "message": "Synology NAS"
+  },
+  "providerSynologyHint": {
+    "message": "Enable WebDAV Server in DSM first; the default HTTPS port is 5006."
+  },
+  "providerAlist": {
+    "message": "AList"
+  },
+  "providerAlistHint": {
+    "message": "AList defaults to port 5244; plain local HTTP addresses work too."
+  },
+  "providerCustom": {
+    "message": "Custom"
+  },
+  "providerCustomHint": {
+    "message": "Enter the URL of an existing WebDAV directory; it must end with /. The sync file is written into that directory."
+  },
+  "syncNotSynced": {
+    "message": "Never synced"
+  },
+  "syncEnabledStatus": {
+    "message": "Cloud sync is on - $time$",
+    "placeholders": {
+      "time": {
+        "content": "$1"
+      }
+    }
+  },
+  "syncErrorStatus": {
+    "message": "Cloud sync error: $reason$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "syncConfigEnabled": {
+    "message": "Sync is on, last sync: $time$",
+    "placeholders": {
+      "time": {
+        "content": "$1"
+      }
+    }
+  },
+  "syncConfigError": {
+    "message": "Sync error: $reason$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "syncNeverSynced": {
+    "message": "Not synced yet"
+  },
+  "syncUrlRequired": {
+    "message": "Please enter the WebDAV address"
+  },
+  "syncRequestingPermission": {
+    "message": "Requesting permission for this domain..."
+  },
+  "syncSaving": {
+    "message": "Saving and syncing..."
+  },
+  "syncSaveFailed": {
+    "message": "Save failed"
+  },
+  "syncSavedFirstFailed": {
+    "message": "Config saved, but the first sync failed: $reason$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "syncDone": {
+    "message": "Sync finished - $time$",
+    "placeholders": {
+      "time": {
+        "content": "$1"
+      }
+    }
+  },
+  "syncUrlRequiredFirst": {
+    "message": "Please enter the WebDAV address first"
+  },
+  "syncTesting": {
+    "message": "Testing connection..."
+  },
+  "syncConnectSuccess": {
+    "message": "Connection succeeded"
+  },
+  "syncConnectFailed": {
+    "message": "Connection failed"
+  },
+  "confirmDisableSync": {
+    "message": "Disable cloud sync? Local bookmarks will not be deleted."
+  },
+  "syncDisabled": {
+    "message": "Cloud sync is off, local data is unchanged"
+  },
+  "syncCloseFailed": {
+    "message": "Failed to disable sync"
+  },
+  "backgroundNoResponse": {
+    "message": "No response from the background script"
+  },
+  "protocolUnsupported": {
+    "message": "Unsupported protocol"
+  },
+  "syncUrlInvalid": {
+    "message": "Invalid WebDAV address: it must start with http:// or https://"
+  },
+  "syncOriginDenied": {
+    "message": "This domain is not authorized, so syncing is not possible"
+  },
+  "syncAuthFailedPermission": {
+    "message": "Authorization failed: $reason$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "addToBookmarks": {
+    "message": "Add to bookmarks"
+  },
+  "adding": {
+    "message": "Adding..."
+  },
+  "bookmarkExists": {
+    "message": "This bookmark already exists!"
+  },
+  "addSuccess": {
+    "message": "Bookmark added!"
+  },
+  "addFailed": {
+    "message": "Failed to add, please try again!"
+  },
+  "viewAllBookmarks": {
+    "message": "View all bookmarks"
+  },
+  "bgUrlInvalid": {
+    "message": "The WebDAV address must start with http:// or https://"
+  },
+  "bgOriginNotGranted": {
+    "message": "This WebDAV domain is not authorized yet; save the sync settings again to grant access"
+  },
+  "bgAuth401": {
+    "message": "Authentication failed (401): the account or app password is incorrect"
+  },
+  "bgForbidden403": {
+    "message": "Permission denied (403): check the WebDAV address and the account permissions"
+  },
+  "bgNotFound404": {
+    "message": "Path not found (404): make sure the WebDAV address is an existing directory"
+  },
+  "bgMethodNotAllowed405": {
+    "message": "The server does not allow this operation (405): make sure the address is a WebDAV directory"
+  },
+  "bgConflict409": {
+    "message": "Directory not found (409): create the sync directory in your drive first"
+  },
+  "bgInsufficientStorage507": {
+    "message": "Not enough space on the drive (507)"
+  },
+  "bgActionRead": {
+    "message": "read"
+  },
+  "bgActionWrite": {
+    "message": "write"
+  },
+  "bgActionTest": {
+    "message": "test"
+  },
+  "bgDavRequestFailed": {
+    "message": "WebDAV $action$ failed: HTTP $code$ $text$",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      },
+      "code": {
+        "content": "$2"
+      },
+      "text": {
+        "content": "$3"
+      }
+    }
+  },
+  "bgNetworkError": {
+    "message": "Could not connect to the WebDAV server: check the address, whether the domain is authorized, and the network or HTTPS certificate"
+  },
+  "bgRemoteInvalidJson": {
+    "message": "The remote sync file is not valid JSON and may have been corrupted by another program"
+  },
+  "bgSyncConflict": {
+    "message": "Sync conflict: the remote file is being modified by another device, please retry later"
+  },
+  "bgSyncNotEnabled": {
+    "message": "Cloud sync is not enabled"
+  },
+  "bgSyncUrlMissing": {
+    "message": "Please configure the WebDAV address first"
+  },
+  "bgTestNoRemoteFile": {
+    "message": "Connection succeeded, no sync file on the remote side yet (the first sync will create it)"
+  },
+  "bgTestAuthFailed": {
+    "message": "Authentication failed: the account or app password is incorrect"
+  },
+  "bgTestForbidden": {
+    "message": "Permission denied: check the directory path and the account permissions"
+  },
+  "bgTestWrongFormat": {
+    "message": "The remote file exists but is not in this extension's sync format"
+  },
+  "bgTestSuccess": {
+    "message": "Connection succeeded, remote sync file found"
+  },
+  "bgTestFailedFallback": {
+    "message": "Connection failed"
+  },
+  "bgUnknownSyncAction": {
+    "message": "Unknown sync command: $action$",
+    "placeholders": {
+      "action": {
+        "content": "$1"
+      }
+    }
+  },
+  "bgBookmarkExists": {
+    "message": "This bookmark already exists"
+  },
+  "bgSyncFileNotObject": {
+    "message": "The sync file does not contain a valid JSON object"
+  },
+  "bgSyncFileUnknownFormat": {
+    "message": "Unrecognized sync file format (missing bookmarks data)"
+  }
+}

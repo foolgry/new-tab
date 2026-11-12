@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>我的书签</title>
+  <title data-i18n-title="newtabTitle">My Bookmarks</title>
   <link rel="stylesheet" href="newtab.css">
 </head>
 <body>
@@ -21,19 +21,20 @@
     <!-- 添加书签弹窗 -->
     <div id="add-modal" class="modal-overlay" style="display: none;">
       <div class="modal">
-        <h2>添加书签</h2>
+        <h2 data-i18n="addBookmarkTitle">Add Bookmark</h2>
         <form id="add-bookmark-form">
           <div class="form-group">
-            <label for="bookmark-title">标题</label>
+            <label for="bookmark-title" data-i18n="formTitle">Title</label>
             <input
               id="bookmark-title"
               type="text"
               required
-              placeholder="输入书签标题"
+              placeholder="Enter bookmark title"
+              data-i18n-placeholder="placeholderBookmarkTitle"
             />
           </div>
           <div class="form-group">
-            <label for="bookmark-url">网址</label>
+            <label for="bookmark-url" data-i18n="formUrl">URL</label>
             <input
               id="bookmark-url"
               type="url"
@@ -42,14 +43,14 @@
             />
           </div>
           <div class="form-group">
-            <label for="bookmark-group">分组</label>
+            <label for="bookmark-group" data-i18n="formGroup">Group</label>
             <select id="bookmark-group" required>
               <!-- 分组选项动态生成 -->
             </select>
           </div>
           <div class="form-actions">
-            <button type="button" id="cancel-add">取消</button>
-            <button type="submit">添加</button>
+            <button type="button" id="cancel-add" data-i18n="cancel">Cancel</button>
+            <button type="submit" data-i18n="add">Add</button>
           </div>
         </form>
       </div>
@@ -58,20 +59,21 @@
     <!-- 添加分组弹窗 -->
     <div id="add-group-modal" class="modal-overlay" style="display: none;">
       <div class="modal">
-        <h2>添加分组</h2>
+        <h2 data-i18n="addGroupTitle">Add Group</h2>
         <form id="add-group-form">
           <div class="form-group">
-            <label for="group-name">分组名称</label>
+            <label for="group-name" data-i18n="formGroupName">Group name</label>
             <input
               id="group-name"
               type="text"
               required
-              placeholder="输入分组名称"
+              placeholder="Enter group name"
+              data-i18n-placeholder="placeholderGroupName"
             />
           </div>
           <div class="form-actions">
-            <button type="button" id="cancel-add-group">取消</button>
-            <button type="submit">添加</button>
+            <button type="button" id="cancel-add-group" data-i18n="cancel">Cancel</button>
+            <button type="submit" data-i18n="add">Add</button>
           </div>
         </form>
       </div>
@@ -80,37 +82,37 @@
     <!-- 云同步设置弹窗 -->
     <div id="sync-modal" class="modal-overlay" style="display: none;">
       <div class="modal modal-sync">
-        <h2>云同步（WebDAV）</h2>
+        <h2 data-i18n="syncModalTitle">Cloud Sync (WebDAV)</h2>
         <form id="sync-form">
           <div class="form-group">
-            <label for="sync-provider">服务商</label>
+            <label for="sync-provider" data-i18n="syncProvider">Provider</label>
             <select id="sync-provider">
               <!-- 服务商选项动态生成 -->
             </select>
           </div>
           <div class="form-group">
-            <label for="sync-url">WebDAV 地址</label>
+            <label for="sync-url" data-i18n="syncUrl">WebDAV address</label>
             <input id="sync-url" type="url" required placeholder="https://example.com/dav/">
             <p class="form-hint" id="sync-url-hint"></p>
           </div>
           <div class="form-group">
-            <label for="sync-username">账号</label>
+            <label for="sync-username" data-i18n="syncUsername">Account</label>
             <input id="sync-username" type="text" autocomplete="username" required>
           </div>
           <div class="form-group">
-            <label for="sync-password">应用密码 / 密钥</label>
-            <input id="sync-password" type="password" autocomplete="current-password" placeholder="留空表示不修改已保存的密码">
+            <label for="sync-password" data-i18n="syncPassword">App password / key</label>
+            <input id="sync-password" type="password" autocomplete="current-password" placeholder="Leave empty to keep the saved password" data-i18n-placeholder="syncPasswordPlaceholder">
           </div>
           <div class="form-group">
-            <label for="sync-filename">同步文件名</label>
+            <label for="sync-filename" data-i18n="syncFilename">Sync file name</label>
             <input id="sync-filename" type="text" placeholder="newtab-bookmarks.json">
           </div>
-          <p class="sync-note">首次同步会把本地与远端书签合并（按网址去重），不会覆盖任何一端。账号和密码只保存在本机浏览器，建议使用服务商提供的「应用专用密码」。</p>
+          <p class="sync-note" data-i18n="syncNote">The first sync merges local and remote bookmarks (deduplicated by URL) and never overwrites either side. The account and password are stored only in the local browser; use the app-specific password provided by your service.</p>
           <div class="sync-status" id="sync-status"></div>
           <div class="form-actions form-actions-split">
-            <button type="button" id="sync-disable">关闭同步</button>
-            <button type="button" id="sync-test">测试连接</button>
-            <button type="submit" id="sync-save">保存并同步</button>
+            <button type="button" id="sync-disable" data-i18n="syncDisable">Disable sync</button>
+            <button type="button" id="sync-test" data-i18n="syncTest">Test connection</button>
+            <button type="submit" id="sync-save" data-i18n="syncSave">Save and sync</button>
           </div>
         </form>
       </div>
@@ -121,6 +123,7 @@
   </div>
 
   <script src="sync-core.js"></script>
+  <script src="i18n.js"></script>
   <script src="newtab.js"></script>
 </body>
 </html>
