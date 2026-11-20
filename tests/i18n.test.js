@@ -70,7 +70,7 @@ test('manifest 使用 __MSG__ 且带 default_locale', () => {
   assert.strictEqual(manifest.default_locale, 'en');
   assert.strictEqual(manifest.name, '__MSG_extName__');
   assert.strictEqual(manifest.description, '__MSG_extDescription__');
-  assert.strictEqual(manifest.version, '1.2.0');
+  assert.strictEqual(manifest.version, '1.3.0');
 });
 
 test('manifest 引用的消息 key 在两种语言里都存在', () => {
