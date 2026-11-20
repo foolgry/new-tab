@@ -237,6 +237,23 @@ const COLLECT_SYNC_MODAL = `(function () {
   });
 })()`;
 
+const COLLECT_LAYOUT_MODAL = `(function () {
+  const q = (selector) => document.querySelector(selector);
+  const modal = document.getElementById('layout-modal');
+  const columnSelect = document.getElementById('layout-columns');
+  const options = columnSelect ? Array.from(columnSelect.options).map((option) => option.textContent) : [];
+  const groupRow = q('#layout-group-list .layout-group-row');
+  return JSON.stringify({
+    visible: modal ? modal.style.display === 'flex' : false,
+    title: q('#layout-modal h2') ? q('#layout-modal h2').textContent : null,
+    columnLabel: q('#layout-modal label[for="layout-columns"]') ? q('#layout-modal label[for="layout-columns"]').textContent : null,
+    columnOptions: options,
+    groupNames: Array.from(document.querySelectorAll('#layout-group-list .layout-group-name')).map((el) => el.textContent),
+    groupAutoLabel: groupRow && groupRow.querySelector('select option') ? groupRow.querySelector('select option').textContent : null,
+    groupColumnOneLabel: groupRow && groupRow.querySelectorAll('select option')[1] ? groupRow.querySelectorAll('select option')[1].textContent : null,
+  });
+})()`;
+
 const COLLECT_POPUP = `(function () {
   const q = (selector) => document.querySelector(selector);
   const group = document.getElementById('bookmark-group');
@@ -377,6 +394,22 @@ async function runScenario(scenario, binary, workDir) {
     check(failures, '同步地址提示', syncModal.hint, catalog.providerCustomHint.message);
 
     await saveScreenshot(cdp, newtabSession, path.join(outDir, `${scenario.name}-sync.png`));
+
+    // ---- 布局设置面板 ----
+    await evalValue(cdp, newtabSession, `document.getElementById('sync-modal').style.display = 'none'; document.getElementById('layout-btn').click(); 1`);
+    await poll(cdp, newtabSession, `document.getElementById('layout-modal').style.display === 'flex'`);
+    const layoutModal = JSON.parse(await evalValue(cdp, newtabSession, COLLECT_LAYOUT_MODAL));
+    check(failures, '布局设置面板可见', layoutModal.visible, true);
+    check(failures, '布局设置标题', layoutModal.title, catalog.layoutSettingsTitle.message);
+    check(failures, '布局设置列数标签', layoutModal.columnLabel, catalog.layoutColumnsLabel.message);
+    check(failures, '布局设置列数选项（自动）', layoutModal.columnOptions[0], catalog.layoutColumnsAuto.message);
+    check(failures, '布局设置列数选项（2 列）', layoutModal.columnOptions[1], substitute(catalog.layoutColumnCount, ['2']));
+    check(failures, '布局设置分组顺序', layoutModal.groupNames, [defaultLabel, CUSTOM_GROUP_NAME]);
+    check(failures, '布局设置分组列选项（自动）', layoutModal.groupAutoLabel, catalog.layoutColumnAuto.message);
+    check(failures, '布局设置分组列选项（第 1 列）', layoutModal.groupColumnOneLabel, substitute(catalog.layoutColumnIndex, ['1']));
+
+    await saveScreenshot(cdp, newtabSession, path.join(outDir, `${scenario.name}-layout.png`));
+    await evalValue(cdp, newtabSession, `document.getElementById('layout-modal').style.display = 'none'; 1`);
 
     // ---- popup 页面 ----
     const popupTarget = await cdp.send('Target.createTarget', { url: `chrome-extension://${extId}/popup.html` });

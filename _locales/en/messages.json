@@ -432,5 +432,45 @@
   },
   "bgSyncFileUnknownFormat": {
     "message": "Unrecognized sync file format (missing bookmarks data)"
+  },
+  "layoutSettingsTitle": {
+    "message": "Layout settings"
+  },
+  "layoutColumnsLabel": {
+    "message": "Columns"
+  },
+  "layoutColumnsAuto": {
+    "message": "Auto (fit window)"
+  },
+  "layoutColumnCount": {
+    "message": "$count$ columns",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "layoutGroupColumnLabel": {
+    "message": "Column per group"
+  },
+  "layoutColumnAuto": {
+    "message": "Auto"
+  },
+  "layoutColumnIndex": {
+    "message": "Column $count$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "layoutNote": {
+    "message": "Groups set to Auto go to the shortest column. A pinned group is placed at the top of its column; if the window is narrower than that column, it moves to the last visible column."
+  },
+  "layoutReset": {
+    "message": "Reset"
+  },
+  "layoutSave": {
+    "message": "Save"
   }
 }

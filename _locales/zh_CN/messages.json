@@ -432,5 +432,45 @@
   },
   "bgSyncFileUnknownFormat": {
     "message": "无法识别的同步文件格式（缺少 bookmarks 数据）"
+  },
+  "layoutSettingsTitle": {
+    "message": "布局设置"
+  },
+  "layoutColumnsLabel": {
+    "message": "列数"
+  },
+  "layoutColumnsAuto": {
+    "message": "自动（跟随窗口宽度）"
+  },
+  "layoutColumnCount": {
+    "message": "$count$ 列",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "layoutGroupColumnLabel": {
+    "message": "分组所在列"
+  },
+  "layoutColumnAuto": {
+    "message": "自动"
+  },
+  "layoutColumnIndex": {
+    "message": "第 $count$ 列",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "layoutNote": {
+    "message": "未指定列的分组会自动放进最矮的一列；指定列的分组显示在该列顶部，窗口过窄时会并入最后一列。"
+  },
+  "layoutReset": {
+    "message": "重置"
+  },
+  "layoutSave": {
+    "message": "保存"
   }
 }

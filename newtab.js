@@ -75,6 +75,7 @@ class BookmarkManager {
 
     this.searchKeyword = '';
     this.collapsedGroups = new Set();
+    this.layoutConfig = { mode: 'auto', groupColumns: {} };
     this.reloadTimer = null;
     this.layoutTimer = null;
     this.syncStatus = null;
@@ -109,7 +110,7 @@ class BookmarkManager {
 
   async loadData() {
     try {
-      const result = await chrome.storage.local.get(['bookmarks', 'groups', 'currentGroupId', 'tombstones', 'collapsedGroups']);
+      const result = await chrome.storage.local.get(['bookmarks', 'groups', 'currentGroupId', 'tombstones', 'collapsedGroups', 'layoutConfig']);
       const normalized = SyncCore.normalizeLocalState(result, this.deviceId);
 
       this.bookmarks = normalized.bookmarks;
@@ -123,6 +124,23 @@ class BookmarkManager {
       // 收起状态是纯本机界面状态，不参与同步
       const collapsed = Array.isArray(result.collapsedGroups) ? result.collapsedGroups : [];
       this.collapsedGroups = new Set(collapsed.filter(id => typeof id === 'string'));
+
+      // 布局设置同样是本机界面状态：列数 auto 或 1~5，以及每个分组固定的列（0 起）
+      const layout = result.layoutConfig && typeof result.layoutConfig === 'object' ? result.layoutConfig : {};
+      const mode = layout.mode === 'auto' || (Number.isInteger(layout.mode) && layout.mode >= 1 && layout.mode <= 5)
+        ? layout.mode
+        : 'auto';
+      const groupColumns = {};
+      if (layout.groupColumns && typeof layout.groupColumns === 'object') {
+        const groupIds = new Set(this.groups.map(group => group.id));
+        Object.keys(layout.groupColumns).forEach((groupId) => {
+          const column = layout.groupColumns[groupId];
+          if (groupIds.has(groupId) && Number.isInteger(column) && column >= 0 && column <= 4) {
+            groupColumns[groupId] = column;
+          }
+        });
+      }
+      this.layoutConfig = { mode, groupColumns };
 
       const migratedCount = this.migrateBookmarkFavicons();
       if (normalized.changed || migratedCount > 0) {
@@ -180,6 +198,14 @@ class BookmarkManager {
     }
   }
 
+  async saveLayoutConfig() {
+    try {
+      await chrome.storage.local.set({ layoutConfig: this.layoutConfig });
+    } catch (error) {
+      console.error('保存布局设置失败:', error);
+    }
+  }
+
   // ==================== 全局事件绑定 ====================
 
   bindGlobalEvents() {
@@ -193,6 +219,18 @@ class BookmarkManager {
     document.getElementById('sync-modal').addEventListener('click', (e) => {
       if (e.target.id === 'sync-modal') this.hideSyncModal();
     });
+    document.getElementById('layout-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'layout-modal') this.hideLayoutModal();
+    });
+
+    // 布局设置表单
+    document.getElementById('layout-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      this.saveLayoutSettings();
+    });
+    document.getElementById('layout-cancel').addEventListener('click', () => this.hideLayoutModal());
+    document.getElementById('layout-reset').addEventListener('click', () => this.resetLayoutSettings());
+    document.getElementById('layout-columns').addEventListener('change', () => this.renderLayoutGroupList());
 
     // 云同步表单
     document.getElementById('sync-form').addEventListener('submit', (e) => {
@@ -264,6 +302,7 @@ class BookmarkManager {
       </div>
       <div class="icon-btns">
         <button id="sync-btn" class="icon-btn sync-btn" title="${this.escapeHtml(I18n.t('syncTitle'))}">☁</button>
+        <button id="layout-btn" class="icon-btn" title="${this.escapeHtml(I18n.t('layoutSettingsTitle'))}">⚙</button>
         <button id="add-bookmark" class="icon-btn" title="${this.escapeHtml(I18n.t('addBookmarkTitle'))}">+</button>
         <button id="add-group" class="icon-btn" title="${this.escapeHtml(I18n.t('addGroupTitle'))}">▤</button>
         <button id="import-btn" class="icon-btn" title="${this.escapeHtml(I18n.t('importTitle'))}">↓</button>
@@ -285,6 +324,7 @@ class BookmarkManager {
     }
 
     document.getElementById('sync-btn').addEventListener('click', () => this.showSyncModal());
+    document.getElementById('layout-btn').addEventListener('click', () => this.showLayoutModal());
     document.getElementById('add-bookmark').addEventListener('click', () => this.showAddModal());
     document.getElementById('add-group').addEventListener('click', () => this.showAddGroupModal());
     document.getElementById('export-btn').addEventListener('click', () => this.exportData());
@@ -369,16 +409,15 @@ class BookmarkManager {
   /**
    * 把分组卡片按「最短列优先」分配到若干列，形成纵向瀑布流：
    * 每列可堆叠多个分组，短分组不再被超长分组的行高推走。
+   * 在布局设置里指定了列的分组固定在该列。
    */
   layoutColumns(container, cards) {
     if (!container) return;
     container.innerHTML = '';
     if (!cards || cards.length === 0) return;
 
-    const gap = parseFloat(getComputedStyle(container).columnGap) || 16;
-    const minColumnWidth = 268;
+    const { count: trackCount, gap } = this.getLayoutColumnCount(this.layoutConfig.mode, container);
     const containerWidth = container.clientWidth;
-    const trackCount = Math.max(1, Math.floor((containerWidth + gap) / (minColumnWidth + gap)));
     const columnWidth = (containerWidth - gap * (trackCount - 1)) / trackCount;
 
     // 离屏测量真实高度（含行数、空状态等），避免按书签数量估算
@@ -412,8 +451,25 @@ class BookmarkManager {
       stacks.push(stack);
     }
 
+    // 先放置手动指定列的分组（固定在该列顶部），再按最短列分配其余分组
     const stackHeights = new Array(trackCount).fill(0);
+    const pinnedCards = [];
+    const autoCards = [];
     cards.forEach((card, index) => {
+      const pinned = this.layoutConfig.groupColumns[card.dataset.groupId];
+      if (Number.isInteger(pinned)) {
+        pinnedCards.push({ card, index, target: Math.max(0, Math.min(pinned, trackCount - 1)) });
+      } else {
+        autoCards.push({ card, index });
+      }
+    });
+
+    pinnedCards.forEach(({ card, index, target }) => {
+      stacks[target].appendChild(card);
+      stackHeights[target] += heights[index] + gap;
+    });
+
+    autoCards.forEach(({ card, index }) => {
       let target = 0;
       for (let i = 1; i < trackCount; i += 1) {
         if (stackHeights[i] < stackHeights[target]) target = i;
@@ -423,6 +479,25 @@ class BookmarkManager {
     });
 
     stacks.forEach(stack => container.appendChild(stack));
+  }
+
+  /**
+   * 解析当前生效的列数：auto 跟随窗口宽度，固定列数不超过窗口可容纳的上限。
+   * 布局与设置面板共用同一套计算，保证面板里看到的列与实际渲染一致。
+   */
+  getLayoutColumnCount(mode = this.layoutConfig.mode, container = document.getElementById('columns-grid')) {
+    const minColumnWidth = 268;
+    let gap = 16;
+    let maxFit = 1;
+    if (container) {
+      gap = parseFloat(getComputedStyle(container).columnGap) || 16;
+      const width = container.clientWidth;
+      maxFit = Math.max(1, Math.floor((width + gap) / (minColumnWidth + gap)));
+    }
+    if (mode === 'auto') return { count: maxFit, gap };
+    const desired = Math.round(Number(mode));
+    const count = Number.isFinite(desired) ? Math.max(1, Math.min(desired, maxFit)) : maxFit;
+    return { count, gap };
   }
 
   relayoutColumns() {
@@ -627,6 +702,10 @@ class BookmarkManager {
 
     if (this.collapsedGroups.delete(groupId)) {
       this.saveCollapsedGroups();
+    }
+    if (this.layoutConfig.groupColumns[groupId] !== undefined) {
+      delete this.layoutConfig.groupColumns[groupId];
+      this.saveLayoutConfig();
     }
 
     await this.saveAll();
@@ -1099,6 +1178,113 @@ class BookmarkManager {
       && date.getDate() === today.getDate();
     if (isToday) return time;
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${time}`;
+  }
+
+  // ==================== 布局设置 ====================
+
+  showLayoutModal() {
+    this.renderLayoutModal();
+    document.getElementById('layout-modal').style.display = 'flex';
+  }
+
+  hideLayoutModal() {
+    document.getElementById('layout-modal').style.display = 'none';
+  }
+
+  renderLayoutModal() {
+    const columnSelect = document.getElementById('layout-columns');
+    if (!columnSelect) return;
+
+    columnSelect.innerHTML = '';
+    const autoOption = document.createElement('option');
+    autoOption.value = 'auto';
+    autoOption.textContent = I18n.t('layoutColumnsAuto');
+    columnSelect.appendChild(autoOption);
+
+    for (let count = 2; count <= 5; count += 1) {
+      const option = document.createElement('option');
+      option.value = String(count);
+      option.textContent = I18n.t('layoutColumnCount', [String(count)]);
+      columnSelect.appendChild(option);
+    }
+    columnSelect.value = this.layoutConfig.mode === 'auto' ? 'auto' : String(this.layoutConfig.mode);
+    this.renderLayoutGroupList();
+  }
+
+  renderLayoutGroupList() {
+    const list = document.getElementById('layout-group-list');
+    const columnSelect = document.getElementById('layout-columns');
+    if (!list || !columnSelect) return;
+
+    const mode = columnSelect.value === 'auto' ? 'auto' : Number(columnSelect.value);
+    const { count } = this.getLayoutColumnCount(mode);
+
+    // 切换列数时保留面板内已选、但尚未保存的分配
+    const previous = {};
+    list.querySelectorAll('.layout-group-row').forEach((row) => {
+      const select = row.querySelector('select');
+      if (select) previous[row.dataset.groupId] = select.value;
+    });
+
+    list.innerHTML = '';
+    const sortedGroups = [...this.groups].sort((a, b) => a.order - b.order);
+    sortedGroups.forEach((group) => {
+      const row = document.createElement('div');
+      row.className = 'layout-group-row';
+      row.dataset.groupId = group.id;
+
+      const name = document.createElement('span');
+      name.className = 'layout-group-name';
+      name.textContent = displayGroupName(group);
+      row.appendChild(name);
+
+      const select = document.createElement('select');
+      const autoOption = document.createElement('option');
+      autoOption.value = 'auto';
+      autoOption.textContent = I18n.t('layoutColumnAuto');
+      select.appendChild(autoOption);
+      for (let index = 0; index < count; index += 1) {
+        const option = document.createElement('option');
+        option.value = String(index);
+        option.textContent = I18n.t('layoutColumnIndex', [String(index + 1)]);
+        select.appendChild(option);
+      }
+
+      const stored = this.layoutConfig.groupColumns[group.id];
+      let value = previous[group.id];
+      if (value === undefined) value = Number.isInteger(stored) ? String(stored) : 'auto';
+      if (value !== 'auto' && Number(value) >= count) value = 'auto';
+      select.value = value;
+      row.appendChild(select);
+      list.appendChild(row);
+    });
+  }
+
+  resetLayoutSettings() {
+    const columnSelect = document.getElementById('layout-columns');
+    if (columnSelect) columnSelect.value = 'auto';
+    this.renderLayoutGroupList();
+    document.querySelectorAll('#layout-group-list select').forEach((select) => {
+      select.value = 'auto';
+    });
+  }
+
+  async saveLayoutSettings() {
+    const columnSelect = document.getElementById('layout-columns');
+    const modeValue = columnSelect ? columnSelect.value : 'auto';
+    const mode = modeValue === 'auto' ? 'auto' : Number(modeValue);
+    const groupColumns = {};
+
+    document.querySelectorAll('#layout-group-list .layout-group-row').forEach((row) => {
+      const select = row.querySelector('select');
+      if (!select || select.value === 'auto') return;
+      groupColumns[row.dataset.groupId] = Number(select.value);
+    });
+
+    this.layoutConfig = { mode, groupColumns };
+    await this.saveLayoutConfig();
+    this.hideLayoutModal();
+    this.renderColumns();
   }
 
   // ==================== 工具方法 ====================

@@ -11,6 +11,7 @@ A clean, modern Chrome new tab page bookmark extension with manual bookmark entr
 - 🖱️ Save the current page as a bookmark from the toolbar icon
 - 🔄 Drag-and-drop ordering (custom order mode)
 - 📊 Visit-frequency statistics and smart sorting
+- 🧩 Masonry layout: stack multiple groups per column, with configurable column count and per-group column pinning
 - ☁️ WebDAV cloud sync (Nutstore / Nextcloud / Synology / AList and more)
 - 💾 Local storage, your data stays on your device
 - 🌐 Bilingual UI (English / Simplified Chinese) that follows the browser language
@@ -41,6 +42,7 @@ A clean, modern Chrome new tab page bookmark extension with manual bookmark entr
 - Click a bookmark to open the site
 - Switch sorting mode: custom order / by visit frequency
 - In custom order mode you can drag bookmarks to rearrange them
+- Click the ⚙ button to open layout settings: follow the window width or fix the column count (2–5), and pin individual groups to a specific column
 
 ### Toolbar popup
 - Click the extension icon in the browser toolbar

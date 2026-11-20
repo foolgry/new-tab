@@ -719,3 +719,61 @@ body {
   justify-content: space-between;
   flex-wrap: wrap;
 }
+
+/* ==================== 布局设置 ==================== */
+
+.modal-layout {
+  max-width: 520px;
+  max-height: 88vh;
+  overflow-y: auto;
+}
+
+.layout-group-list {
+  max-height: 40vh;
+  overflow-y: auto;
+  padding: 0.3rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-input);
+  background: #faf8f3;
+}
+
+.layout-group-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+}
+
+.layout-group-row:hover {
+  background: var(--hover-bg);
+}
+
+.layout-group-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.88rem;
+  color: var(--text);
+}
+
+.layout-group-row select {
+  width: auto;
+  min-width: 120px;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.layout-group-row select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
