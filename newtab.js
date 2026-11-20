@@ -76,6 +76,7 @@ class BookmarkManager {
     this.searchKeyword = '';
     this.collapsedGroups = new Set();
     this.reloadTimer = null;
+    this.layoutTimer = null;
     this.syncStatus = null;
 
     this.init();
@@ -108,7 +109,7 @@ class BookmarkManager {
 
   async loadData() {
     try {
-      const result = await chrome.storage.local.get(['bookmarks', 'groups', 'currentGroupId', 'tombstones']);
+      const result = await chrome.storage.local.get(['bookmarks', 'groups', 'currentGroupId', 'tombstones', 'collapsedGroups']);
       const normalized = SyncCore.normalizeLocalState(result, this.deviceId);
 
       this.bookmarks = normalized.bookmarks;
@@ -118,6 +119,10 @@ class BookmarkManager {
       if (!this.groups.some(group => group.id === this.currentGroupId)) {
         this.currentGroupId = 'default';
       }
+
+      // 收起状态是纯本机界面状态，不参与同步
+      const collapsed = Array.isArray(result.collapsedGroups) ? result.collapsedGroups : [];
+      this.collapsedGroups = new Set(collapsed.filter(id => typeof id === 'string'));
 
       const migratedCount = this.migrateBookmarkFavicons();
       if (normalized.changed || migratedCount > 0) {
@@ -164,6 +169,14 @@ class BookmarkManager {
       await chrome.storage.local.set({ currentGroupId: this.currentGroupId });
     } catch (error) {
       console.error('保存当前分组失败:', error);
+    }
+  }
+
+  async saveCollapsedGroups() {
+    try {
+      await chrome.storage.local.set({ collapsedGroups: Array.from(this.collapsedGroups) });
+    } catch (error) {
+      console.error('保存分组收起状态失败:', error);
     }
   }
 
@@ -226,6 +239,12 @@ class BookmarkManager {
         e.target.value = '';
       });
     }
+
+    // 窗口尺寸变化后重新计算列数并分配卡片
+    window.addEventListener('resize', () => {
+      clearTimeout(this.layoutTimer);
+      this.layoutTimer = setTimeout(() => this.relayoutColumns(), 150);
+    });
   }
 
   // ==================== 渲染入口 ====================
@@ -304,6 +323,7 @@ class BookmarkManager {
       return;
     }
 
+    const cards = [];
     sortedGroups.forEach((group, index) => {
       const groupBookmarks = this.bookmarks
         .filter(b => b.groupId === group.id)
@@ -340,8 +360,79 @@ class BookmarkManager {
       `;
 
       this.bindColumnEvents(col, group);
-      container.appendChild(col);
+      cards.push(col);
     });
+
+    this.layoutColumns(container, cards);
+  }
+
+  /**
+   * 把分组卡片按「最短列优先」分配到若干列，形成纵向瀑布流：
+   * 每列可堆叠多个分组，短分组不再被超长分组的行高推走。
+   */
+  layoutColumns(container, cards) {
+    if (!container) return;
+    container.innerHTML = '';
+    if (!cards || cards.length === 0) return;
+
+    const gap = parseFloat(getComputedStyle(container).columnGap) || 16;
+    const minColumnWidth = 268;
+    const containerWidth = container.clientWidth;
+    const trackCount = Math.max(1, Math.floor((containerWidth + gap) / (minColumnWidth + gap)));
+    const columnWidth = (containerWidth - gap * (trackCount - 1)) / trackCount;
+
+    // 离屏测量真实高度（含行数、空状态等），避免按书签数量估算
+    const measurer = document.createElement('div');
+    measurer.className = 'columns-measurer';
+    if (columnWidth > 0) measurer.style.width = `${columnWidth}px`;
+    document.body.appendChild(measurer);
+    cards.forEach(card => measurer.appendChild(card));
+
+    // 收起动画依赖 max-height，按真实内容高度写回，避免超长分组被固定上限裁切。
+    // 测量时临时展开已收起的卡片并关闭过渡，保证拿到含内边距的完整高度。
+    const measuredBodies = [];
+    cards.forEach(card => {
+      const body = card.querySelector('.group-body');
+      if (!body) return;
+      const collapsed = card.classList.contains('collapsed');
+      body.style.transition = 'none';
+      if (collapsed) card.classList.remove('collapsed');
+      body.style.setProperty('--body-h', `${body.scrollHeight}px`);
+      if (collapsed) card.classList.add('collapsed');
+      measuredBodies.push(body);
+    });
+    const heights = cards.map(card => card.getBoundingClientRect().height);
+    measuredBodies.forEach(body => { body.style.transition = ''; });
+    measurer.remove();
+
+    const stacks = [];
+    for (let i = 0; i < trackCount; i += 1) {
+      const stack = document.createElement('div');
+      stack.className = 'group-stack';
+      stacks.push(stack);
+    }
+
+    const stackHeights = new Array(trackCount).fill(0);
+    cards.forEach((card, index) => {
+      let target = 0;
+      for (let i = 1; i < trackCount; i += 1) {
+        if (stackHeights[i] < stackHeights[target]) target = i;
+      }
+      stacks[target].appendChild(card);
+      stackHeights[target] += heights[index] + gap;
+    });
+
+    stacks.forEach(stack => container.appendChild(stack));
+  }
+
+  relayoutColumns() {
+    const container = document.getElementById('columns-grid');
+    if (!container) return;
+    const cards = Array.from(container.querySelectorAll('.group-column'));
+    if (cards.length === 0) return;
+    // 尺寸变化引起的重新分配不再播放入场动画，避免拖动窗口时反复闪动
+    cards.forEach(card => { card.style.animation = 'none'; });
+    this.layoutColumns(container, cards);
   }
 
   renderRowHtml(bookmark) {
@@ -399,12 +490,17 @@ class BookmarkManager {
   }
 
   toggleGroupCollapse(groupId) {
-    if (this.collapsedGroups.has(groupId)) {
-      this.collapsedGroups.delete(groupId);
-    } else {
+    const collapsed = !this.collapsedGroups.has(groupId);
+    if (collapsed) {
       this.collapsedGroups.add(groupId);
+    } else {
+      this.collapsedGroups.delete(groupId);
     }
-    this.renderColumns();
+
+    // 只切换当前卡片：同列下方分组自然上移，其它列不受影响
+    const card = document.querySelector(`.group-column[data-group-id="${CSS.escape(groupId)}"]`);
+    if (card) card.classList.toggle('collapsed', collapsed);
+    this.saveCollapsedGroups();
   }
 
   initRowDrag(row, bookmark) {
@@ -528,6 +624,10 @@ class BookmarkManager {
     const index = this.groups.findIndex(g => g.id === groupId);
     if (index !== -1) this.groups.splice(index, 1);
     this.groups.forEach((g, i) => { g.order = i; });
+
+    if (this.collapsedGroups.delete(groupId)) {
+      this.saveCollapsedGroups();
+    }
 
     await this.saveAll();
 

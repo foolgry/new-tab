@@ -77,6 +77,7 @@ zip -r release/archive.zip . -x "release/*" -x ".claude/*" -x ".DS_Store"
 | `bookmarks` | 书签数组 |
 | `groups` | 分组数组 |
 | `currentGroupId` | 当前选中的分组 |
+| `collapsedGroups` | 已收起的分组 id 列表（纯本机界面状态，不参与同步） |
 | `deviceId` | 本机设备标识 |
 | `tombstones` | 删除标记（书签 / 分组） |
 | `syncConfig` | WebDAV 地址、账号、文件名、上次同步状态等 |
